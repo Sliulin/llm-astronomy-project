@@ -1,0 +1,8 @@
+{
+  "message": "找到 2 个光谱",
+  "count": 2,
+  "spectra": [
+    "https://ned.ipac.caltech.edu/spc1/1980/1980A+AS...40..295H/NGC_0224:S:B:hbc1980.fits.gz",
+    "https://ned.ipac.caltech.edu/spc1/2007/2007MNRAS.382.1552L/NGC_0224:S:Opt:l2015.fits.gz"
+  ]
+}

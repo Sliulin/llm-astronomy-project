@@ -1,0 +1,1623 @@
+{
+  "message": "找到 231 个对象",
+  "count": 231,
+  "results": [
+    {
+      "name": "2MASS J00424134+4116164",
+      "ra": 10.67227,
+      "dec": 41.27124,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424137+4116206",
+      "ra": 10.67239,
+      "dec": 41.2724,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2CXO J004241.4+411617",
+      "ra": 10.67278,
+      "dec": 41.27163,
+      "type": "XrayS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424164+4116152",
+      "ra": 10.6735,
+      "dec": 41.27091,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424171+4116007",
+      "ra": 10.67383,
+      "dec": 41.26689,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "MESSIER 031:[R64] Nova 24",
+      "ra": 10.67388,
+      "dec": 41.26839,
+      "type": "Nova",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424175+4116069",
+      "ra": 10.67396,
+      "dec": 41.26859,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424175+4116200",
+      "ra": 10.67399,
+      "dec": 41.27224,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "XMMSL1 J004241.8+411604",
+      "ra": 10.67417,
+      "dec": 41.26778,
+      "type": "XrayS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424185+4116128",
+      "ra": 10.67438,
+      "dec": 41.27025,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424188+4116026",
+      "ra": 10.67451,
+      "dec": 41.26741,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424195+4115499",
+      "ra": 10.67482,
+      "dec": 41.26387,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424195+4116067",
+      "ra": 10.67483,
+      "dec": 41.26855,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424203+4116230",
+      "ra": 10.67514,
+      "dec": 41.27307,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424206+4116287",
+      "ra": 10.67527,
+      "dec": 41.27465,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424210+4116027",
+      "ra": 10.67542,
+      "dec": 41.26743,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2CXO J004242.1+411608",
+      "ra": 10.67544,
+      "dec": 41.26899,
+      "type": "XrayS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424215+4116206",
+      "ra": 10.67564,
+      "dec": 41.27241,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "CXO J004242.0+411608",
+      "ra": 10.67572,
+      "dec": 41.2689,
+      "type": "V*",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424221+4116150",
+      "ra": 10.6759,
+      "dec": 41.27086,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424222+4115587",
+      "ra": 10.67596,
+      "dec": 41.26633,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424233+4115514",
+      "ra": 10.67642,
+      "dec": 41.2643,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2CXO J004242.3+411544",
+      "ra": 10.67652,
+      "dec": 41.26248,
+      "type": "XrayS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424239+4116106",
+      "ra": 10.67666,
+      "dec": 41.26962,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424242+4115588",
+      "ra": 10.67675,
+      "dec": 41.26634,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "MESSIER 031 N2001-01c",
+      "ra": 10.67697,
+      "dec": 41.2649,
+      "type": "PN",
+      "redshift": -0.002016
+    },
+    {
+      "name": "CXOU J004242.52+411558.3",
+      "ra": 10.67718,
+      "dec": 41.2662,
+      "type": "XrayS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424257+4116283",
+      "ra": 10.67739,
+      "dec": 41.27455,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424258+4115507",
+      "ra": 10.67745,
+      "dec": 41.26409,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424268+4115501",
+      "ra": 10.67786,
+      "dec": 41.26393,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "MESSIER 031 N2004-08c",
+      "ra": 10.67788,
+      "dec": 41.26267,
+      "type": "Nova",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424271+4116109",
+      "ra": 10.67797,
+      "dec": 41.26971,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424273+4115490",
+      "ra": 10.67806,
+      "dec": 41.26363,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424275+4115529",
+      "ra": 10.67813,
+      "dec": 41.26471,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "CXOU J004242.75+411614.2",
+      "ra": 10.67815,
+      "dec": 41.27061,
+      "type": "XrayS",
+      "redshift": "--"
+    },
+    {
+      "name": "2CXO J004242.7+411544",
+      "ra": 10.67816,
+      "dec": 41.26244,
+      "type": "XrayS",
+      "redshift": "--"
+    },
+    {
+      "name": "2CXO J004242.7+411614",
+      "ra": 10.67824,
+      "dec": 41.27073,
+      "type": "XrayS",
+      "redshift": "--"
+    },
+    {
+      "name": "MESSIER 031 N2010-01d",
+      "ra": 10.67838,
+      "dec": 41.27075,
+      "type": "Nova",
+      "redshift": "--"
+    },
+    {
+      "name": "CXOGSG J004243.1+411640",
+      "ra": 10.67867,
+      "dec": 41.27769,
+      "type": "PN",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424290+4115541",
+      "ra": 10.67876,
+      "dec": 41.26505,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424295+4116355",
+      "ra": 10.67899,
+      "dec": 41.27655,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424299+4116302",
+      "ra": 10.67913,
+      "dec": 41.27506,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "CXOU J004242.99+411543.1",
+      "ra": 10.67914,
+      "dec": 41.26197,
+      "type": "XrayS",
+      "redshift": "--"
+    },
+    {
+      "name": "2CXO J004242.9+411543",
+      "ra": 10.67915,
+      "dec": 41.26198,
+      "type": "XrayS",
+      "redshift": "--"
+    },
+    {
+      "name": "MESSIER 031:[CJF89] 020",
+      "ra": 10.67931,
+      "dec": 41.26017,
+      "type": "PN",
+      "redshift": -0.001778
+    },
+    {
+      "name": "2MASS J00424303+4115513",
+      "ra": 10.67932,
+      "dec": 41.26427,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "MESSIER 031 N1995-09b",
+      "ra": 10.67933,
+      "dec": 41.268,
+      "type": "Nova",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424305+4115590",
+      "ra": 10.67938,
+      "dec": 41.26641,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "SN 1885A",
+      "ra": 10.67954,
+      "dec": 41.26794,
+      "type": "SN",
+      "redshift": "--"
+    },
+    {
+      "name": "[COB2014] J004243.09+411603.80",
+      "ra": 10.67954,
+      "dec": 41.26772,
+      "type": "VisS",
+      "redshift": "--"
+    },
+    {
+      "name": "2CXO J004243.1+411603",
+      "ra": 10.67955,
+      "dec": 41.26776,
+      "type": "XrayS",
+      "redshift": "--"
+    },
+    {
+      "name": "HR 0182",
+      "ra": 10.67968,
+      "dec": 41.26756,
+      "type": "VisS",
+      "redshift": "--"
+    },
+    {
+      "name": "MESSIER 031:[CJF89] 006",
+      "ra": 10.67969,
+      "dec": 41.26361,
+      "type": "PN",
+      "redshift": "--"
+    },
+    {
+      "name": "[COB2014] J004243.13+411604.10",
+      "ra": 10.67971,
+      "dec": 41.26781,
+      "type": "VisS",
+      "redshift": "--"
+    },
+    {
+      "name": "CXOU J004243.13+411627.3",
+      "ra": 10.67974,
+      "dec": 41.27427,
+      "type": "XrayS",
+      "redshift": "--"
+    },
+    {
+      "name": "[COB2014] J004243.14+411604.60",
+      "ra": 10.67975,
+      "dec": 41.26794,
+      "type": "VisS",
+      "redshift": "--"
+    },
+    {
+      "name": "2CXO J004243.1+411640",
+      "ra": 10.67995,
+      "dec": 41.2778,
+      "type": "XrayS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424327+4115589",
+      "ra": 10.68016,
+      "dec": 41.26647,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424327+4115560",
+      "ra": 10.68032,
+      "dec": 41.26557,
+      "type": "PN",
+      "redshift": -0.000785
+    },
+    {
+      "name": "RX J0042.7+4115",
+      "ra": 10.68042,
+      "dec": 41.2625,
+      "type": "XrayS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424337+4115416",
+      "ra": 10.68075,
+      "dec": 41.26156,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424341+4115388",
+      "ra": 10.68088,
+      "dec": 41.2608,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424341+4115482",
+      "ra": 10.6809,
+      "dec": 41.2634,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424343+4115351",
+      "ra": 10.68099,
+      "dec": 41.25975,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424345+4115598",
+      "ra": 10.68104,
+      "dec": 41.26663,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "MESSIER 031 N2011-05a",
+      "ra": 10.68129,
+      "dec": 41.27708,
+      "type": "Nova",
+      "redshift": "--"
+    },
+    {
+      "name": "MESSIER 031:[CJF89] 003",
+      "ra": 10.68216,
+      "dec": 41.27378,
+      "type": "PN",
+      "redshift": -0.000931
+    },
+    {
+      "name": "2CXO J004243.7+411632",
+      "ra": 10.68226,
+      "dec": 41.27566,
+      "type": "V*",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424377+4116045",
+      "ra": 10.68238,
+      "dec": 41.26792,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424377+4116403",
+      "ra": 10.6824,
+      "dec": 41.27787,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "MESSIER 031:[CJF89] 008",
+      "ra": 10.68246,
+      "dec": 41.26692,
+      "type": "PN",
+      "redshift": -0.00084
+    },
+    {
+      "name": "2MASS J00424386+4116123",
+      "ra": 10.68251,
+      "dec": 41.27013,
+      "type": "XrayS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424380+4116181",
+      "ra": 10.68252,
+      "dec": 41.27172,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2CXO J004243.8+411629",
+      "ra": 10.68253,
+      "dec": 41.27473,
+      "type": "XrayS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424381+4116362",
+      "ra": 10.68256,
+      "dec": 41.27673,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424381+4115553",
+      "ra": 10.68258,
+      "dec": 41.26536,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "[PFJ93] 43",
+      "ra": 10.68264,
+      "dec": 41.27517,
+      "type": "XrayS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424385+4116014",
+      "ra": 10.68271,
+      "dec": 41.26706,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2CXO J004243.8+411611",
+      "ra": 10.68271,
+      "dec": 41.26977,
+      "type": "V*",
+      "redshift": "--"
+    },
+    {
+      "name": "2CXO J004243.8+411603",
+      "ra": 10.68274,
+      "dec": 41.26773,
+      "type": "V*",
+      "redshift": -0.000846
+    },
+    {
+      "name": "2CXO J004243.8+411629A",
+      "ra": 10.68286,
+      "dec": 41.27491,
+      "type": "V*",
+      "redshift": "--"
+    },
+    {
+      "name": "MESSIER 031 N2015-11d",
+      "ra": 10.68287,
+      "dec": 41.26719,
+      "type": "Nova",
+      "redshift": "--"
+    },
+    {
+      "name": "MESSIER 031:[DMC2019] 01",
+      "ra": 10.68296,
+      "dec": 41.25994,
+      "type": "MCld",
+      "redshift": 0.00015
+    },
+    {
+      "name": "2XMM J004243.9+411550",
+      "ra": 10.68302,
+      "dec": 41.26395,
+      "type": "XrayS",
+      "redshift": "--"
+    },
+    {
+      "name": "MESSIER 031 N2003-06e",
+      "ra": 10.68304,
+      "dec": 41.25942,
+      "type": "Nova",
+      "redshift": "--"
+    },
+    {
+      "name": "2CXO J004243.9+411610",
+      "ra": 10.68306,
+      "dec": 41.26963,
+      "type": "XrayS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424394+4115434",
+      "ra": 10.68309,
+      "dec": 41.26207,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424394+4115402",
+      "ra": 10.68312,
+      "dec": 41.26118,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424395+4115468",
+      "ra": 10.68313,
+      "dec": 41.263,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2CXO J004244.0+411636",
+      "ra": 10.68326,
+      "dec": 41.27693,
+      "type": "XrayS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424398+4116028",
+      "ra": 10.68326,
+      "dec": 41.26746,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424403+4116108",
+      "ra": 10.68346,
+      "dec": 41.26968,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424403+4116069",
+      "ra": 10.68347,
+      "dec": 41.26859,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424410+4115376",
+      "ra": 10.68378,
+      "dec": 41.26047,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2CXO J004244.1+411604",
+      "ra": 10.68384,
+      "dec": 41.26777,
+      "type": "V*",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424414+4116000",
+      "ra": 10.68394,
+      "dec": 41.26668,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424416+4116152",
+      "ra": 10.68403,
+      "dec": 41.2709,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424418+4116278",
+      "ra": 10.68409,
+      "dec": 41.27439,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424420+4116009",
+      "ra": 10.68418,
+      "dec": 41.26694,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "MESSIER 031:[CJF89] 316",
+      "ra": 10.68425,
+      "dec": 41.26761,
+      "type": "PN",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424426+4115330",
+      "ra": 10.68442,
+      "dec": 41.25919,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2CXO J004244.2+411613",
+      "ra": 10.68452,
+      "dec": 41.27054,
+      "type": "XrayS",
+      "redshift": "--"
+    },
+    {
+      "name": "MESSIER 031 N2004-09b",
+      "ra": 10.68458,
+      "dec": 41.26861,
+      "type": "Nova",
+      "redshift": "--"
+    },
+    {
+      "name": "WISEA J004244.32+411608.1",
+      "ra": 10.68469,
+      "dec": 41.26894,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "MESSIER 031*",
+      "ra": 10.6847,
+      "dec": 41.26901,
+      "type": "XrayS",
+      "redshift": "--"
+    },
+    {
+      "name": "2XMM J004244.3+411604",
+      "ra": 10.68472,
+      "dec": 41.2679,
+      "type": "XrayS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424433+4116406",
+      "ra": 10.68474,
+      "dec": 41.27795,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2CXO J004244.3+411608",
+      "ra": 10.68475,
+      "dec": 41.269,
+      "type": "XrayS",
+      "redshift": "--"
+    },
+    {
+      "name": "MESSIER 031",
+      "ra": 10.68479,
+      "dec": 41.26906,
+      "type": "G",
+      "redshift": -0.000991
+    },
+    {
+      "name": "2MASS J00424435+4116247",
+      "ra": 10.6848,
+      "dec": 41.27355,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "New-ANGELS 13010927010100009",
+      "ra": 10.68482,
+      "dec": 41.26948,
+      "type": "XrayS",
+      "redshift": "--"
+    },
+    {
+      "name": "2CXO J004244.3+411605",
+      "ra": 10.68484,
+      "dec": 41.26817,
+      "type": "PN",
+      "redshift": "--"
+    },
+    {
+      "name": "2CXO J004244.3+411607",
+      "ra": 10.68486,
+      "dec": 41.26871,
+      "type": "XrayS",
+      "redshift": "--"
+    },
+    {
+      "name": "MESSIER 031 N1999-01e",
+      "ra": 10.68492,
+      "dec": 41.27114,
+      "type": "Nova",
+      "redshift": "--"
+    },
+    {
+      "name": "SSTSL2 J004244.42+411608.3",
+      "ra": 10.6851,
+      "dec": 41.26897,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424442+4115391",
+      "ra": 10.68512,
+      "dec": 41.26088,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "MESSIER 031:[CFN87] Nova 07",
+      "ra": 10.68512,
+      "dec": 41.26717,
+      "type": "Nova",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424446+4116016",
+      "ra": 10.68527,
+      "dec": 41.26712,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2CXO J004244.4+411607",
+      "ra": 10.68538,
+      "dec": 41.26875,
+      "type": "XrayS",
+      "redshift": "--"
+    },
+    {
+      "name": "MESSIER 031:[DMC2019] 12",
+      "ra": 10.68542,
+      "dec": 41.26944,
+      "type": "MCld",
+      "redshift": -0.000589
+    },
+    {
+      "name": "2XMM J004244.5+411553",
+      "ra": 10.68563,
+      "dec": 41.265,
+      "type": "XrayS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424455+4116103",
+      "ra": 10.68566,
+      "dec": 41.26955,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "MESSIER 031:[DMC2019] 09",
+      "ra": 10.68567,
+      "dec": 41.26622,
+      "type": "MCld",
+      "redshift": 1.4e-05
+    },
+    {
+      "name": "2XMM J004244.5+411601",
+      "ra": 10.68574,
+      "dec": 41.26711,
+      "type": "XrayS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424460+4116141",
+      "ra": 10.68584,
+      "dec": 41.2706,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424461+4115334",
+      "ra": 10.68592,
+      "dec": 41.2593,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "MESSIER 031 N2003-10b",
+      "ra": 10.68596,
+      "dec": 41.26494,
+      "type": "Nova",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424464+4116106",
+      "ra": 10.68601,
+      "dec": 41.26963,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424464+4116092",
+      "ra": 10.68603,
+      "dec": 41.26923,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2CXO J004244.6+411618",
+      "ra": 10.68611,
+      "dec": 41.27169,
+      "type": "XrayS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424467+4116412",
+      "ra": 10.68613,
+      "dec": 41.27812,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424469+4116234",
+      "ra": 10.68624,
+      "dec": 41.27319,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "MESSIER 031 N2004-06d",
+      "ra": 10.68625,
+      "dec": 41.27672,
+      "type": "Nova",
+      "redshift": "--"
+    },
+    {
+      "name": "CXOU J004244.73+411614.6",
+      "ra": 10.68641,
+      "dec": 41.27074,
+      "type": "XrayS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424475+4116382",
+      "ra": 10.68646,
+      "dec": 41.27729,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424479+4115332",
+      "ra": 10.68666,
+      "dec": 41.25923,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424482+4116437",
+      "ra": 10.68675,
+      "dec": 41.27883,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "37W 135",
+      "ra": 10.68683,
+      "dec": 41.27272,
+      "type": "V*",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424484+4116145",
+      "ra": 10.68685,
+      "dec": 41.27071,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424485+4116287",
+      "ra": 10.68688,
+      "dec": 41.27464,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424487+4116005",
+      "ra": 10.68696,
+      "dec": 41.26683,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424487+4115473",
+      "ra": 10.68699,
+      "dec": 41.26315,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424487+4115529",
+      "ra": 10.68699,
+      "dec": 41.2647,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "CXOGSG J004244.9+411619",
+      "ra": 10.68708,
+      "dec": 41.27194,
+      "type": "XrayS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424497+4116034",
+      "ra": 10.68741,
+      "dec": 41.26763,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424498+4115395",
+      "ra": 10.68746,
+      "dec": 41.261,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "MESSIER 031:[MMD2006] 1300",
+      "ra": 10.6875,
+      "dec": 41.27358,
+      "type": "EmLS",
+      "redshift": -0.000626
+    },
+    {
+      "name": "2MASS J00424500+4116338",
+      "ra": 10.68753,
+      "dec": 41.27608,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424501+4115423",
+      "ra": 10.68755,
+      "dec": 41.26177,
+      "type": "UvS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424502+4116405",
+      "ra": 10.68759,
+      "dec": 41.27792,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424502+4116130",
+      "ra": 10.68761,
+      "dec": 41.2703,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "MESSIER 031:[DMC2019] 10",
+      "ra": 10.68767,
+      "dec": 41.26231,
+      "type": "MCld",
+      "redshift": 0.00032
+    },
+    {
+      "name": "2MASS J00424504+4116364",
+      "ra": 10.68769,
+      "dec": 41.27679,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2CXO J004245.1+411621",
+      "ra": 10.68796,
+      "dec": 41.27269,
+      "type": "XrayS",
+      "redshift": "--"
+    },
+    {
+      "name": "CXOU J004245.11+411542.5",
+      "ra": 10.68797,
+      "dec": 41.26181,
+      "type": "XrayS",
+      "redshift": "--"
+    },
+    {
+      "name": "CXOU J004245.11+411536.9",
+      "ra": 10.68798,
+      "dec": 41.26026,
+      "type": "XrayS",
+      "redshift": "--"
+    },
+    {
+      "name": "2CXO J004245.1+411542",
+      "ra": 10.68798,
+      "dec": 41.26181,
+      "type": "XrayS",
+      "redshift": "--"
+    },
+    {
+      "name": "MESSIER 031:[BGM2013] 13",
+      "ra": 10.68801,
+      "dec": 41.27269,
+      "type": "XrayS",
+      "redshift": "--"
+    },
+    {
+      "name": "MESSIER 031:[CJF89] 009",
+      "ra": 10.68834,
+      "dec": 41.26822,
+      "type": "PN",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424522+4115473",
+      "ra": 10.68843,
+      "dec": 41.26315,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2CXO J004245.2+411611",
+      "ra": 10.68845,
+      "dec": 41.26974,
+      "type": "V*",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424526+4116125",
+      "ra": 10.68861,
+      "dec": 41.27015,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424536+4115366",
+      "ra": 10.68904,
+      "dec": 41.26019,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424538+4116422",
+      "ra": 10.68909,
+      "dec": 41.27842,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424539+4116398",
+      "ra": 10.68914,
+      "dec": 41.27774,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424541+4115504",
+      "ra": 10.68923,
+      "dec": 41.26402,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "MESSIER 031 N2004-11d",
+      "ra": 10.68946,
+      "dec": 41.27589,
+      "type": "Nova",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424552+4115405",
+      "ra": 10.68968,
+      "dec": 41.26128,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "MESSIER 031:[DMC2019] 05",
+      "ra": 10.68971,
+      "dec": 41.26267,
+      "type": "MCld",
+      "redshift": 0.000377
+    },
+    {
+      "name": "2MASS J00424556+4116310",
+      "ra": 10.68985,
+      "dec": 41.27529,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424556+4115491",
+      "ra": 10.68986,
+      "dec": 41.26366,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2CXO J004245.5+411608",
+      "ra": 10.68995,
+      "dec": 41.26905,
+      "type": "V*",
+      "redshift": "--"
+    },
+    {
+      "name": "CXOU J004245.59+411606.4",
+      "ra": 10.68996,
+      "dec": 41.26846,
+      "type": "XrayS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424569+4115542",
+      "ra": 10.69041,
+      "dec": 41.26508,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424570+4116365",
+      "ra": 10.69045,
+      "dec": 41.27682,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424571+4115452",
+      "ra": 10.6905,
+      "dec": 41.26256,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "MESSIER 031 N2009-10c",
+      "ra": 10.69057,
+      "dec": 41.26517,
+      "type": "Nova",
+      "redshift": -0.00176
+    },
+    {
+      "name": "2MASS J00424577+4116376",
+      "ra": 10.69074,
+      "dec": 41.27714,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "MESSIER 031:[CJF89] 454",
+      "ra": 10.69076,
+      "dec": 41.26688,
+      "type": "PN",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424590+4116331",
+      "ra": 10.69127,
+      "dec": 41.27586,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424591+4115409",
+      "ra": 10.69131,
+      "dec": 41.26137,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424592+4116308",
+      "ra": 10.69135,
+      "dec": 41.27522,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424594+4115469",
+      "ra": 10.69144,
+      "dec": 41.26304,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424594+4115489",
+      "ra": 10.69144,
+      "dec": 41.2636,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424602+4116236",
+      "ra": 10.69154,
+      "dec": 41.27336,
+      "type": "PN",
+      "redshift": -0.000707
+    },
+    {
+      "name": "2CXO J004245.9+411619",
+      "ra": 10.69164,
+      "dec": 41.2721,
+      "type": "V*",
+      "redshift": "--"
+    },
+    {
+      "name": "RX J0042.7+4116",
+      "ra": 10.69167,
+      "dec": 41.27083,
+      "type": "XrayS",
+      "redshift": "--"
+    },
+    {
+      "name": "MESSIER 031 N2016-10c",
+      "ra": 10.69179,
+      "dec": 41.26983,
+      "type": "Nova",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424603+4115467",
+      "ra": 10.69183,
+      "dec": 41.26297,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424608+4116386",
+      "ra": 10.69203,
+      "dec": 41.27741,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "MESSIER 031:[DMC2019] 07",
+      "ra": 10.69221,
+      "dec": 41.27061,
+      "type": "MCld",
+      "redshift": 0.000219
+    },
+    {
+      "name": "2CXO J004246.1+411543",
+      "ra": 10.6923,
+      "dec": 41.26199,
+      "type": "XrayS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424622+4115585",
+      "ra": 10.69261,
+      "dec": 41.26627,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424623+4116215",
+      "ra": 10.69266,
+      "dec": 41.27266,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424628+4116319",
+      "ra": 10.69287,
+      "dec": 41.27555,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "MESSIER 031:[CJF89] 072",
+      "ra": 10.69314,
+      "dec": 41.2628,
+      "type": "PN",
+      "redshift": -0.001264
+    },
+    {
+      "name": "2CXO J004246.3+411614X",
+      "ra": 10.69314,
+      "dec": 41.27071,
+      "type": "XrayS",
+      "redshift": "--"
+    },
+    {
+      "name": "New-ANGELS 13010927010100005",
+      "ra": 10.69323,
+      "dec": 41.26782,
+      "type": "XrayS",
+      "redshift": "--"
+    },
+    {
+      "name": "2CXO J004246.4+411610",
+      "ra": 10.69341,
+      "dec": 41.26942,
+      "type": "XrayS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424644+4116305",
+      "ra": 10.69351,
+      "dec": 41.27515,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "MESSIER 031 N2003-10a",
+      "ra": 10.69354,
+      "dec": 41.26544,
+      "type": "Nova",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424648+4116225",
+      "ra": 10.69368,
+      "dec": 41.27293,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424649+4116285",
+      "ra": 10.69374,
+      "dec": 41.27459,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424655+4116229",
+      "ra": 10.69396,
+      "dec": 41.27305,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "NVSS J004246+411610",
+      "ra": 10.694,
+      "dec": 41.26967,
+      "type": "RadioS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424661+4116125",
+      "ra": 10.69424,
+      "dec": 41.27014,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424664+4115564",
+      "ra": 10.69434,
+      "dec": 41.26569,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "MESSIER 031:[CJF89] 010",
+      "ra": 10.69452,
+      "dec": 41.2693,
+      "type": "PN",
+      "redshift": -0.000529
+    },
+    {
+      "name": "2MASS J00424673+4115551",
+      "ra": 10.69475,
+      "dec": 41.26532,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424681+4116141",
+      "ra": 10.69504,
+      "dec": 41.2706,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424684+4116146",
+      "ra": 10.69518,
+      "dec": 41.27074,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "CXOU J004246.85+411605.6",
+      "ra": 10.69522,
+      "dec": 41.26824,
+      "type": "XrayS",
+      "redshift": "--"
+    },
+    {
+      "name": "MESSIER 031:[DMC2019] 04",
+      "ra": 10.69554,
+      "dec": 41.27197,
+      "type": "MCld",
+      "redshift": 0.000256
+    },
+    {
+      "name": "CXO J004246.9+411615",
+      "ra": 10.69566,
+      "dec": 41.27099,
+      "type": "V*",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424695+4115540",
+      "ra": 10.69566,
+      "dec": 41.26502,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "2CXO J004246.9+411615",
+      "ra": 10.69567,
+      "dec": 41.27099,
+      "type": "XrayS",
+      "redshift": "--"
+    },
+    {
+      "name": "MESSIER 031:[BGM2013] 15",
+      "ra": 10.6957,
+      "dec": 41.27099,
+      "type": "XrayS",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424699+4116280",
+      "ra": 10.69582,
+      "dec": 41.27447,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "AT 2017gud",
+      "ra": 10.69617,
+      "dec": 41.26675,
+      "type": "Nova",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424708+4116012",
+      "ra": 10.69618,
+      "dec": 41.267,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "MESSIER 031:[DMC2019] 02",
+      "ra": 10.69625,
+      "dec": 41.26961,
+      "type": "MCld",
+      "redshift": 0.000485
+    },
+    {
+      "name": "2MASS J00424714+4116245",
+      "ra": 10.69642,
+      "dec": 41.27348,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "MESSIER 031 N2004-11f",
+      "ra": 10.69649,
+      "dec": 41.27212,
+      "type": "Nova",
+      "redshift": "--"
+    },
+    {
+      "name": "2CXO J004247.1+411619",
+      "ra": 10.69654,
+      "dec": 41.27215,
+      "type": "XrayS",
+      "redshift": "--"
+    },
+    {
+      "name": "MESSIER 031 N2001-10c",
+      "ra": 10.69671,
+      "dec": 41.27186,
+      "type": "Nova",
+      "redshift": "--"
+    },
+    {
+      "name": "MESSIER 031 N2004-10b",
+      "ra": 10.69683,
+      "dec": 41.26514,
+      "type": "Nova",
+      "redshift": "--"
+    },
+    {
+      "name": "MESSIER 031 N2004-02a",
+      "ra": 10.697,
+      "dec": 41.27261,
+      "type": "Nova",
+      "redshift": "--"
+    },
+    {
+      "name": "2MASS J00424732+4116187",
+      "ra": 10.69717,
+      "dec": 41.27188,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "MESSIER 031:[DMC2019] 03",
+      "ra": 10.69758,
+      "dec": 41.26792,
+      "type": "MCld",
+      "redshift": 0.00037
+    },
+    {
+      "name": "2MASS J00424744+4116068",
+      "ra": 10.69771,
+      "dec": 41.26856,
+      "type": "IrS",
+      "redshift": "--"
+    },
+    {
+      "name": "MESSIER 031:[DMC2019] 08",
+      "ra": 10.69808,
+      "dec": 41.26908,
+      "type": "MCld",
+      "redshift": 0.000572
+    }
+  ]
+}
