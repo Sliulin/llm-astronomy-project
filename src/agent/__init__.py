@@ -1,11 +1,7 @@
-"""智能代理模块"""
+"""
+Agent 模块导出
+"""
 
-from .core import Agent
-from .tools import ToolRegistry
+from .core import query
 
-__all__ = [
-    "Agent",
-    "ToolRegistry"
-]
-
-__version__ = "0.1.0"
+__all__ = ["query"]

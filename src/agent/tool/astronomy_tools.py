@@ -20,7 +20,7 @@ def register_astronomy_tools(registry):
         parameters={
             "object_name": {
                 "type": "string",
-                "description": "天文对象名称，如 'M 31'、'NGC 4565' 等",
+                "description": "天文对象名称",
             }
         },
         returns="包含天文对象详细信息的字典",
@@ -34,7 +34,7 @@ def register_astronomy_tools(registry):
         parameters={
             "object_name": {
                 "type": "string",
-                "description": "天文对象名称，如 'M 31'、'NGC 4565' 等",
+                "description": "天文对象名称",
             },
             "radius": {
                 "type": "number",
@@ -76,7 +76,7 @@ def register_astronomy_tools(registry):
         parameters={
             "object_name": {
                 "type": "string",
-                "description": "天文对象名称，如 'M 1'、'M 31' 等",
+                "description": "天文对象名称",
             },
             "max_images": {
                 "type": "integer",
@@ -95,7 +95,7 @@ def register_astronomy_tools(registry):
         parameters={
             "object_name": {
                 "type": "string",
-                "description": "天文对象名称，如 '3C 273'、'M 31' 等",
+                "description": "天文对象名称",
             },
             "max_spectra": {
                 "type": "integer",
@@ -105,17 +105,6 @@ def register_astronomy_tools(registry):
         },
         returns="包含光谱信息的字典",
     )
-
-    # 注册缓存清理工具
-    registry.register_tool(
-        name="clear_cache",
-        description="清除天文数据缓存",
-        func=lambda: _clear_cache(astronomy_manager),
-        parameters={},
-        returns="包含操作结果的字典",
-    )
-
-
 
     # 注册ADQL查询工具
     registry.register_tool(
@@ -210,20 +199,6 @@ def _get_spectra(astronomy_manager, object_name: str, max_spectra: int = 5) -> D
     """
     print(f"获取光谱: {object_name}, 最大数量: {max_spectra}")
     return astronomy_manager.get_spectra(object_name, max_spectra)
-
-
-def _clear_cache(astronomy_manager) -> Dict[str, Any]:
-    """
-    清除缓存
-
-    Args:
-        astronomy_manager: 天文数据管理器实例
-
-    Returns:
-        操作结果
-    """
-    print("清除天文数据缓存")
-    return astronomy_manager.clear_cache()
 
 
 def _query_adql(astronomy_manager, query: str) -> Dict[str, Any]:

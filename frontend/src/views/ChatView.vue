@@ -1,488 +1,226 @@
+<template>
+  <div class="absolute inset-0 flex bg-gray-900 text-gray-100">
+    <aside class="w-64 border-r border-gray-800 bg-gray-950/50 flex flex-col hidden md:flex h-full">
+      <div class="p-4">
+        <button @click="createNewSession" class="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm font-medium transition-colors border border-gray-700 hover:border-gray-600">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+          新建观测任务
+        </button>
+      </div>
+      <div class="flex-1 overflow-y-auto px-3 space-y-1">
+        <div class="text-xs font-semibold text-gray-500 px-3 py-2 uppercase tracking-wider">历史记录</div>
+        
+        <div v-for="session in sessions" :key="session.id" 
+             class="group relative w-full text-left px-3 py-2.5 rounded-lg text-sm truncate transition-colors cursor-pointer flex items-center justify-between"
+             :class="activeSessionId === session.id ? 'bg-gray-800 text-gray-200 border border-gray-700' : 'text-gray-400 hover:bg-gray-900 hover:text-gray-300 border border-transparent'"
+             @click="selectSession(session.id)">
+          <span class="truncate flex-1">{{ session.title }}</span>
+          
+          <button @click.stop="deleteSession(session.id)" class="opacity-0 group-hover:opacity-100 p-1 text-gray-500 hover:text-red-400 transition-opacity ml-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <section class="flex-1 flex flex-col relative h-full">
+      <div class="flex-1 overflow-y-auto p-4 md:p-6 space-y-6" ref="chatContainer">
+        <div v-if="messages.length === 0" class="flex flex-col items-center justify-center h-full text-gray-400 space-y-4">
+          <div class="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd" /></svg>
+          </div>
+          <h2 class="text-xl font-semibold text-gray-200">AstroAgent 已就绪</h2>
+        </div>
+
+        <div v-for="msg in messages" :key="msg.id" class="max-w-4xl mx-auto flex gap-4" :class="{'flex-row-reverse': msg.role === 'user'}">
+          <div class="flex-shrink-0 mt-1">
+            <div v-if="msg.role === 'user'" class="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-sm font-bold">U</div>
+            <div v-else class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center shadow-md shadow-blue-500/30">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd" /></svg>
+            </div>
+          </div>
+          
+          <div class="flex-1 max-w-[85%]" :class="msg.role === 'user' ? 'text-right' : 'text-left'">
+            <div v-if="msg.role === 'user'" class="inline-block bg-gray-800 border border-gray-700 rounded-2xl px-5 py-3 text-gray-100 whitespace-pre-wrap text-left">
+              {{ msg.content }}
+            </div>
+            
+            <div v-else class="inline-block w-full">
+              <div v-if="['thinking', 'action', 'observation'].includes(msg.type)" class="text-sm text-gray-400 mb-2 flex items-center gap-2 bg-gray-800/50 p-3 rounded-xl border border-gray-700/50 w-fit">
+                <span v-if="msg.type === 'thinking'" class="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"></span>
+                <svg v-else-if="msg.type === 'action'" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                {{ msg.content }}
+              </div>
+              <div v-else-if="msg.type === 'answer'" class="w-full">
+                <MarkdownViewer :content="msg.content" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-4 bg-gray-900 border-t border-gray-800">
+        <div class="max-w-4xl mx-auto relative">
+          <form @submit.prevent="sendMessage" class="relative flex items-end bg-gray-800 rounded-2xl border border-gray-700 shadow-lg overflow-hidden focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/50 transition-all">
+            <textarea 
+              v-model="userInput"
+              @keydown.enter.prevent="handleEnter"
+              placeholder="输入天文指令..." 
+              class="flex-1 bg-transparent border-none py-4 px-5 text-gray-100 placeholder-gray-500 focus:outline-none resize-none max-h-48 min-h-[56px]"
+              rows="1"
+            ></textarea>
+            <div class="p-2">
+              <button type="submit" :disabled="!userInput.trim() || isSending" class="p-2 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-xl transition-colors flex items-center justify-center h-10 w-10">
+                <svg v-if="!isSending" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" /></svg>
+                <span v-else class="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full"></span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+  </div>
+</template>
+
 <script setup lang="ts">
-import { ref, computed, nextTick, watch, onMounted, onUnmounted } from 'vue'
-import {
-  NCard,
-  NInput,
-  NButton,
-  NSpace,
-  NList,
-  NListItem,
-  NIcon,
-  NText,
-  NTag,
-  NEmpty,
-  useMessage
-} from 'naive-ui'
-import {
-  SendOutline,
-  RefreshOutline,
-  TrashOutline,
-  PulseOutline,
-  CodeWorkingOutline,
-  EyeOutline,
-  ChatbubbleOutline,
-  PersonOutline,
-  BulbOutline
-} from '@vicons/ionicons5'
-import { useSSE } from '@/composables/useSSE'
-import type { SSEMessage } from '@/types'
-import dayjs from 'dayjs'
+import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
+import MarkdownViewer from '@/components/MarkdownViewer.vue'
 
-const message = useMessage()
+interface Session { id: string; title: string; updated_at: number }
+interface Message { id: string; role: 'user' | 'assistant' | 'system'; type: string; content: string; timestamp?: number; session_id?: string }
 
-// SSE连接配置
-const sseConfig = {
-  url: '/api/sse',
-  reconnectInterval: 3000,
-  maxReconnectAttempts: 5,
-  heartbeatInterval: 30000
-}
-
-// 使用SSE组合式函数
-const { connect, disconnect, reconnect, isConnected, messages, clearMessages, sendMessage } = useSSE(sseConfig)
-
-// 输入消息
-const inputMessage = ref('')
-const messageContainer = ref<HTMLElement | null>(null)
-const containerRef = ref<HTMLElement | null>(null)
+const userInput = ref('')
+const messages = ref<Message[]>([])
+const sessions = ref<Session[]>([])
+const activeSessionId = ref('')
 const isSending = ref(false)
+const chatContainer = ref<HTMLElement | null>(null)
+let eventSource: EventSource | null = null
 
-// 消息类型配置
-const messageTypeConfig: Record<string, { 
-  label: string, 
-  icon: any, 
-  color: string,
-  bgColor: string,
-  tagType: 'default' | 'success' | 'info' | 'warning' | 'error' | 'primary'
-}> = {
-  connection: { 
-    label: '连接', 
-    icon: PulseOutline, 
-    color: '#10b981', 
-    bgColor: '#10b98120',
-    tagType: 'success'
-  },
-  user: { 
-    label: '用户', 
-    icon: PersonOutline, 
-    color: '#10b981', 
-    bgColor: '#10b98120',
-    tagType: 'success'
-  },
-  thinking: { 
-    label: 'AI思考', 
-    icon: BulbOutline, 
-    color: '#3b82f6', 
-    bgColor: '#3b82f620',
-    tagType: 'info'
-  },
-  action: { 
-    label: 'AI行动', 
-    icon: CodeWorkingOutline, 
-    color: '#3b82f6', 
-    bgColor: '#3b82f620',
-    tagType: 'info'
-  },
-  observation: { 
-    label: 'AI观察', 
-    icon: EyeOutline, 
-    color: '#3b82f6', 
-    bgColor: '#3b82f620',
-    tagType: 'info'
-  },
-  answer: { 
-    label: 'AI回答', 
-    icon: ChatbubbleOutline, 
-    color: '#3b82f6', 
-    bgColor: '#3b82f620',
-    tagType: 'info'
-  }
-}
-
-// 过滤后的消息（排除心跳）
-const displayMessages = computed(() => {
-  return messages.value.filter(msg => msg.type !== 'heartbeat')
-})
-
-// 常规消息（用户消息、AI思考、AI回答）
-const regularMessages = computed(() => {
-  return displayMessages.value.filter(msg => 
-    msg.type === 'question' || msg.type === 'thinking' || msg.type === 'answer'
-  )
-})
-
-// AI行动和观察消息
-const actionMessages = computed(() => {
-  return displayMessages.value.filter(msg => 
-    msg.type === 'action' || msg.type === 'observation'
-  )
-})
-
-// 自动滚动到底部
-async function scrollToBottom() {
+const scrollToBottom = async () => {
   await nextTick()
-  if (messageContainer.value) {
-    messageContainer.value.scrollTop = messageContainer.value.scrollHeight
-    setTimeout(() => {
-      if (messageContainer.value) {
-        messageContainer.value.scrollTop = messageContainer.value.scrollHeight
-      }
-    }, 50)
+  if (chatContainer.value) {
+    chatContainer.value.scrollTop = chatContainer.value.scrollHeight
   }
 }
 
-// 监听消息变化，自动滚动
-watch(displayMessages, () => {
-  scrollToBottom()
-}, { deep: true })
+watch(messages, () => { scrollToBottom() }, { deep: true })
 
-// 组件挂载时连接
-onMounted(() => {
-  connect()
-})
-
-onUnmounted(() => {
-  // 清理资源
-})
-
-// 发送消息
-async function handleSend() {
-  if (!inputMessage.value.trim()) {
-    message.warning('请输入消息内容')
-    return
-  }
-
-  if (!isConnected.value) {
-    message.error('未连接到服务器，请检查连接状态')
-    return
-  }
-
-  isSending.value = true
-  const content = inputMessage.value.trim()
-
-  try {
-    // 添加用户消息
-    const userMessage: SSEMessage = {
-      id: crypto.randomUUID(),
-      type: 'question',
-      content: content,
-      role: 'user',
-      timestamp: new Date()
+// ==============================
+// 1. 会话管理逻辑
+// ==============================
+const fetchSessions = async () => {
+  const res = await fetch('http://localhost:8000/api/sessions')
+  sessions.value = await res.json()
+  
+  if (sessions.value.length > 0 && !activeSessionId.value) {
+    // 【修复报错】先安全地取出第一个元素
+    const firstSession = sessions.value[0]
+    // 明确判断它存在后，再读取它的 id
+    if (firstSession) {
+      selectSession(firstSession.id)
     }
-    messages.value.push(userMessage)
+  }
+}
 
-    // 清空输入
-    inputMessage.value = ''
+const selectSession = async (id: string) => {
+  activeSessionId.value = id
+  const res = await fetch(`http://localhost:8000/api/sessions/${id}`)
+  messages.value = await res.json()
+  scrollToBottom()
+}
 
-    // 发送消息到服务器
-    await sendMessage(content)
+const createNewSession = async () => {
+  const res = await fetch('http://localhost:8000/api/sessions', { method: 'POST' })
+  const data = await res.json()
+  await fetchSessions()
+  selectSession(data.id)
+}
 
-    message.success('消息已发送')
+const deleteSession = async (id: string) => {
+  await fetch('http://localhost:8000/api/sessions/' + id, { method: 'DELETE' })
+  activeSessionId.value = '' // 清空选中状态，强制重新拉取
+  await fetchSessions()
+}
+
+// ==============================
+// 2. 核心通信逻辑
+// ==============================
+const connectSSE = () => {
+  if (eventSource) eventSource.close()
+  eventSource = new EventSource('http://localhost:8000/sse')
+  
+  eventSource.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data)
+      if (data.type === 'connection') return
+      
+      // 【关键防御】防止后台流式消息串台到其他会话界面
+      if (data.session_id && data.session_id !== activeSessionId.value) return
+
+      const existingMsgIndex = messages.value.findIndex(m => m.id === data.id)
+      if (existingMsgIndex !== -1) {
+        messages.value[existingMsgIndex]!.content = data.content
+      } else {
+        messages.value.push(data)
+      }
+      
+      
+      if (data.type === 'answer' || data.type === 'error') {
+        isSending.value = false
+        // 对话结束后刷新侧边栏，更新标题
+        fetchSessions() 
+      }
+    } catch (e) { console.error(e) }
+  }
+}
+
+const sendMessage = async () => {
+  const text = userInput.value.trim()
+  if (!text || isSending.value) return
+
+  // 前端立刻上屏
+  messages.value.push({
+    id: Date.now().toString(),
+    role: 'user',
+    type: 'answer',
+    content: text,
+    timestamp: Date.now()
+  })
+  userInput.value = ''
+  isSending.value = true
+
+  // 附带 session_id 发送给后端
+  try {
+    await fetch('http://localhost:8000/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text, session_id: activeSessionId.value })
+    })
   } catch (error) {
-    message.error('发送失败：' + (error as Error).message)
-  } finally {
+    messages.value.push({ id: Date.now().toString(), role: 'assistant', type: 'error', content: "网络请求失败" })
     isSending.value = false
   }
 }
 
-// 处理回车发送
-function handleKeydown(e: KeyboardEvent) {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault()
-    handleSend()
-  }
+const handleEnter = (e: KeyboardEvent) => {
+  if (e.shiftKey) return
+  sendMessage()
 }
 
-// 清空聊天记录
-function handleClear() {
-  clearMessages()
-  message.success('聊天记录已清空')
-}
+onMounted(() => {
+  fetchSessions()
+  connectSSE()
+})
 
-// 格式化时间
-function formatTime(date?: Date) {
-  if (!date) return ''
-  return dayjs(date).format('HH:mm:ss')
-}
-
-// 获取消息类型配置
-function getMessageTypeConfig(type: string) {
-  return messageTypeConfig[type] 
-}
+onUnmounted(() => {
+  if (eventSource) eventSource.close()
+})
 </script>
 
-<template>
-  <!-- 占满整个父容器 -->
-  <div ref="containerRef" class="h-full flex flex-col overflow-hidden p-0 m-0" style="min-height: 0;">
-    <!-- 工具栏 - 固定在顶部 -->
-    <NCard class="flex-shrink-0 mb-4" size="small" :bordered="false">
-      <NSpace justify="space-between" align="center">
-        <NSpace align="center">
-          <NTag :type="isConnected ? 'success' : 'error'" round>
-            <template #icon>
-              <NIcon>
-                <PulseOutline />
-              </NIcon>
-            </template>
-            {{ isConnected ? '已连接' : '未连接' }}
-          </NTag>
-          <NText depth="3">消息数: {{ displayMessages.length }}</NText>
-        </NSpace>
-
-        <NSpace>
-          <NButton v-if="!isConnected" size="small" @click="reconnect">
-            <template #icon>
-              <NIcon><RefreshOutline /></NIcon>
-            </template>
-            重连
-          </NButton>
-
-          <NButton size="small" type="error" ghost @click="handleClear">
-            <template #icon>
-              <NIcon><TrashOutline /></NIcon>
-            </template>
-            清空
-          </NButton>
-        </NSpace>
-      </NSpace>
-    </NCard>
-
-    <!-- 消息列表容器 - 占满剩余空间 -->
-    <div class="flex-1 overflow-hidden min-h-0" style="flex: 1; min-height: 0;">
-      <!-- 使用 grid 布局，5列网格，比例4:1 -->
-      <div class="grid grid-cols-5 h-full gap-4 min-h-0">
-        
-        <!-- 常规消息栏 - 占4列 (80%) -->
-        <NCard 
-          class="col-span-4 min-w-0 h-full overflow-hidden"
-          :bordered="false" 
-          content-style="height: 100%; padding: 0; display: flex; flex-direction: column;"
-        >
-          <div
-            ref="messageContainer"
-            class="flex-1 overflow-y-auto p-4"
-            style="min-height: 0;"
-          >
-            <!-- 无消息时显示空状态 -->
-            <NEmpty 
-              v-if="regularMessages.length === 0 && actionMessages.length === 0" 
-              description="暂无消息，开始对话吧"
-              class="h-full flex flex-col items-center justify-center"
-            >
-              <template #icon>
-                <NIcon size="48" depth="3">
-                  <ChatbubbleOutline />
-                </NIcon>
-              </template>
-            </NEmpty>
-
-            <!-- 有消息时正常显示列表 -->
-            <NList v-else-if="regularMessages.length > 0" class="bg-transparent">
-              <NListItem
-                v-for="msg in regularMessages"
-                :key="msg.id"
-                class="!px-0 !py-3 animate-fade-in"
-              >
-                <div 
-                  class="flex items-start gap-3" 
-                  :class="{ 'flex-row-reverse': msg.role === 'user' }"
-                >
-                  <!-- 消息类型图标 -->
-                  <div
-                    class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-                    :style="{ backgroundColor: getMessageTypeConfig(msg.type)?.bgColor || '#3b82f620' }"
-                  >
-                    <NIcon
-                      :size="16"
-                      :color="getMessageTypeConfig(msg.type)?.color || '#3b82f6'"
-                    >
-                      <component :is="getMessageTypeConfig(msg.type)?.icon || ChatbubbleOutline" /> 
-                    </NIcon>
-                  </div>
-
-                  <!-- 消息内容 -->
-                  <div class="flex-1 min-w-0">
-                    <div 
-                      class="flex items-center gap-2 mb-1 flex-wrap" 
-                      :class="{ 'justify-end': msg.role === 'user' }"
-                    >
-                      <NTag
-                        :type="getMessageTypeConfig(msg.type)?.tagType || 'primary'"
-                        size="small"
-                        round
-                      >
-                        {{ getMessageTypeConfig(msg.type)?.label || '消息' }}
-                      </NTag>
-                      <NText depth="3" class="text-xs">
-                        {{ formatTime(msg.timestamp) }}
-                      </NText>
-                    </div>
-                    
-                    <div 
-                      class="text-sm break-words whitespace-pre-line"
-                      :style="{ 
-                        color: getMessageTypeConfig(msg.type)?.color || '#3b82f6',
-                        textAlign: msg.role === 'user' ? 'right' : 'left'
-                      }"
-                    >
-                      {{ msg.content }}
-                    </div>
-                    
-                    <!-- 附加数据 -->
-                    <div 
-                      v-if="msg.data" 
-                      class="mt-2 p-2 bg-gray-50 dark:bg-gray-800 rounded text-xs"
-                      :class="{ 'text-right': msg.role === 'user' }"
-                    >
-                      <pre class="overflow-x-auto">{{ JSON.stringify(msg.data, null, 2) }}</pre>
-                    </div>
-                  </div>
-                </div>
-              </NListItem>
-            </NList>
-          </div>
-        </NCard>
-
-        <!-- AI行动和观察消息栏 - 占1列 (20%) -->
-        <NCard 
-          class="col-span-1 min-w-0 h-full overflow-hidden"
-          :bordered="false" 
-          content-style="height: 100%; padding: 0; display: flex; flex-direction: column;"
-        >
-          <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-            <NText strong>AI行动与观察</NText>
-          </div>
-          <div class="flex-1 overflow-y-auto p-4" style="min-height: 0;">
-            <NList v-if="actionMessages.length > 0" class="bg-transparent">
-              <NListItem
-                v-for="msg in actionMessages"
-                :key="msg.id"
-                class="!px-0 !py-3 animate-fade-in"
-              >
-                <div class="flex items-start gap-3">
-                  <!-- 消息类型图标 -->
-                  <div
-                    class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-                    :style="{ backgroundColor: getMessageTypeConfig(msg.type)?.bgColor || '#3b82f620' }"
-                  >
-                    <NIcon
-                      :size="16"
-                      :color="getMessageTypeConfig(msg.type)?.color || '#3b82f6'"
-                    >
-                      <component :is="getMessageTypeConfig(msg.type)?.icon || ChatbubbleOutline" />
-                    </NIcon>
-                  </div>
-
-                  <!-- 消息内容 -->
-                  <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-2 mb-1 flex-wrap">
-                      <NTag
-                        :type="getMessageTypeConfig(msg.type)?.tagType || 'primary'"
-                        size="small"
-                        round
-                      >
-                        {{ getMessageTypeConfig(msg.type)?.label || '消息' }}
-                      </NTag>
-                      <NText depth="3" class="text-xs">
-                        {{ formatTime(msg.timestamp) }}
-                      </NText>
-                    </div>
-                    
-                    <div 
-                      class="text-sm break-words whitespace-pre-line"
-                      :style="{ 
-                        color: getMessageTypeConfig(msg.type)?.color || '#3b82f6',
-                      }"
-                    >
-                      {{ msg.content }}
-                    </div>
-                    
-                    <!-- 附加数据 -->
-                    <div 
-                      v-if="msg.data" 
-                      class="mt-2 p-2 bg-gray-50 dark:bg-gray-800 rounded text-xs"
-                    >
-                      <pre class="overflow-x-auto">{{ JSON.stringify(msg.data, null, 2) }}</pre>
-                    </div>
-                  </div>
-                </div>
-              </NListItem>
-            </NList>
-            <NEmpty v-else description="暂无AI行动与观察消息" />
-          </div>
-        </NCard>
-        
-      </div>
-    </div>
-
-    <!-- 输入框 - 固定在底部 -->
-    <NCard size="small" class="flex-shrink-0 mt-4" :bordered="false">
-      <NSpace align="center" :size="12">
-        <NInput
-          v-model:value="inputMessage"
-          type="textarea"
-          placeholder="输入消息，按Enter发送，Shift+Enter换行..."
-          :autosize="{ minRows: 2, maxRows: 6 }"
-          class="flex-1"
-          @keydown="handleKeydown"
-          style="width: 1000px;"
-        />
-        <NButton
-          type="primary"
-          :disabled="!isConnected || !inputMessage.trim()"
-          :loading="isSending"
-          @click="handleSend"
-        >
-          <template #icon>
-            <NIcon><SendOutline /></NIcon>
-          </template>
-          发送
-        </NButton>
-      </NSpace>
-    </NCard>
-  </div>
-</template>
-
 <style scoped>
-.animate-fade-in {
-  animation: fadeIn 0.3s ease-out;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-:deep(.n-list-item) {
-  border-bottom: 1px solid rgba(128, 128, 128, 0.1);
-}
-
-:deep(.n-list-item:last-child) {
-  border-bottom: none;
-}
-
-:deep(.n-card__content) {
-  height: 100%;
-  overflow: hidden;
-}
-
-/* 确保空状态内容垂直居中 */
-:deep(.n-empty) {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-}
-
-/* 移除卡片边框，让界面更简洁 */
-:deep(.n-card) {
-  border: none;
-}
+textarea::-webkit-scrollbar { width: 6px; }
+textarea::-webkit-scrollbar-track { background: transparent; }
+textarea::-webkit-scrollbar-thumb { background-color: #374151; border-radius: 20px; }
 </style>

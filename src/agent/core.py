@@ -1,453 +1,196 @@
-import sys
 import os
-import re
+import sys
+import json
 import uuid
+import asyncio
+
 # 添加项目根目录到Python路径
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from typing import Dict, List, Any, Optional
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, BASE_DIR)
+
 from dotenv import load_dotenv
-from openai import OpenAI
+from openai import AsyncOpenAI
 from src.agent.tools import tool_registry
 
+# 加载环境变量
+env_path = os.path.join(BASE_DIR, "assets", "openai.env")
+load_dotenv(env_path)
 
-class Agent:
-    def __init__(self, system=""):
-        load_dotenv("./assets/openai.env")
-        api_key = os.getenv("HUNYUAN_API_KEY")
-        base_url = os.getenv("OPENAI_API_BASE")
-        self.client = OpenAI(
-            api_key=api_key,
-            base_url=base_url
-        )
-        self.system = system
-        self.messages = []
-        if self.system:
-            self.messages.append({"role": "system", "content": self.system})
-        self.dialogue_history = []
+api_key = os.getenv("HUNYUAN_API_KEY", "dummy-key")
+base_url = os.getenv("OPENAI_API_BASE", "https://api.hunyuan.cloud.tencent.com/v1")
+
+client = AsyncOpenAI(api_key=api_key, base_url=base_url)
+
+class NumpyEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if hasattr(obj, 'item'):
+            return obj.item()
+        elif hasattr(obj, 'tolist'):
+            return obj.tolist()
+        return super().default(obj)
+
+SYSTEM_PROMPT = """你是一个专业的天文数据智能助手。
+你能够调用工具查询天文数据库。
+
+【输出规范 - 必须严格遵守】：
+1. 语言：始终使用中文回答。
+2. 严禁原文：绝对禁止直接输出工具返回的 JSON 源代码或 Python 字典格式。
+3. 数据整理：请从工具返回的复杂数据中提取核心信息（如名称、坐标、红移、数量等），并整理成自然的中文句子或 Markdown 表格。
+4. 链接渲染：当遇到 .fits 或 .fits.gz 图像链接时，必须将其转化为标准的 Markdown 链接。
+   - 格式：[文字描述](链接地址)
+   - 示例：[点击下载 M31 的 FITS 图像](https://ned.ipac.caltech.edu/...)
+   - 注意：方括号 [] 和 圆括号 () 之间严禁有任何空格。
+
+【当前环境】：
+所有的图像存储在本地 download/ 目录下，或指向远程 NED 数据库。如果是本地路径，请确保链接正确。"""
+
+# 初始化全局记忆
+session_memory = {}
+
+async def query(question: str, session_id: str = "default", max_turns: int = 5, on_output=None):
+    global session_memory
     
-    def __call__(self, message, step=None):
-        # 注意：用户消息已经在query函数中添加，这里不再重复添加
-        result = self.execute(step=step)
-        # 注意：assistant消息已经在query函数中添加，这里不再重复添加
-        return result
+    if session_id not in session_memory:
+        session_memory[session_id] = [{"role": "system", "content": SYSTEM_PROMPT}]
     
-    def execute(self, step=None):
-        response = self.client.chat.completions.create(
-            model="hunyuan-turbo",
-            messages=self.messages,
-            stream=True
-        )
-        full_response = ""
-        for chunk in response:
-            if chunk.choices[0].delta.content:
-                content = chunk.choices[0].delta.content
-                print(content, end="", flush=True)
-                full_response += content
-        print()
-        return full_response
+    messages = session_memory[session_id]
     
-    def get_dialogue_history(self):
-        return self.dialogue_history
-
-
-def get_known_actions():
-    return tool_registry.get_all_tools()
-
-action_re = re.compile(r'^行动：(\w+): (.*)$')
-
-def get_tool_descriptions():
-    return tool_registry.get_tool_descriptions()
-
-def query(question, max_turns=5, on_output=None):
-    i = 0
-    tools = get_known_actions()
-    known_actions = {tool.name: tool for tool in tools}
-    system_prompt = f"""
-    你需要按照以下循环进行思考和行动：思考、行动、PAUSE、观察。
-    循环结束后，你需要输出最终答案。
-    使用"思考"描述你对问题的思考过程。
-    使用"行动"执行可用的操作之一，然后返回"PAUSE"。
-    "观察"是执行操作的结果。
-
-    你可用的操作：
-
-    {get_tool_descriptions()}
-
-    示例会话：
-
-    问题：查询M 31的信息
-    思考：我需要使用get_astronomy_object工具查询M 31的信息
-    行动：get_astronomy_object: {{"object_name": "M31"}}
-    PAUSE
-
-    你将收到以下信息：
-
-    观察：{{"message": "成功找到对象", "StatusCode": 100, "ResultCode": 3, ...}}
-
-    然后你输出：
-
-    思考：根据工具返回的数据，M31的详细信息已经获取到了，可以直接输出答案。
-    行动：回答：M31（仙女座星系）是一个螺旋星系，距离地球约254万光年，位于仙女座方向。
-            - **名称**：MESSIER 031
-            - **位置**：RA: 10.684790, Dec: 41.269060
-            - **类型**：Galaxy
-            - **红移**：-0.000991
-        完整结果已保存到 download 目录
-    如果有多个对象，回答：
-    1. 第一个对象的信息
-    2. 第二个对象的信息
-    ...
+    if len(messages) > 10:
+        session_memory[session_id] = [messages[0]] + messages[-6:]
+        messages = session_memory[session_id]
     
-    重要提示：
-    1. 在"回答"部分，必须包含观察结果中的具体信息
-    2. 如果查询到多个对象，请列出前3-5个对象的名称和关键信息
-    3. 半径参数设为0.01度，最大数量设为5
-
-    """
+    messages.append({"role": "user", "content": question})
+    tools = tool_registry.get_openai_tools()
     
-    class StreamingAgent(Agent):
-        def __init__(self, system=""):
-            super().__init__(system)
-            self.current_mode = "none"  # none, thinking, answer
-            self.thinking_buffer = ""
-            self.answer_buffer = ""
-            # 初始化消息ID字典
-            self.message_ids = {
-                "stream": str(uuid.uuid4()),
-                "thinking": str(uuid.uuid4()),
-                "action": str(uuid.uuid4()),
-                "observation": str(uuid.uuid4()),
-                "answer": str(uuid.uuid4())
-            }
+    # ==========================================
+    # 【新增】：创建一个列表，悄悄攒着从工具里拦截下来的本地文件链接
+    # ==========================================
+    bypassed_links = []
+    
+    turn = 0
+    while turn < max_turns:
+        turn += 1
+        print(f"\n--- 第 {turn} 轮思考 (Session: {session_id[:8]}) ---")
         
-        def execute(self, step=None):
-            # 根据step生成唯一的消息ID，确保每一轮的消息都分开显示
-            message_ids = {
-                "stream": str(uuid.uuid4()),
-                "thinking": f"thinking_{step}_{str(uuid.uuid4())}",
-                "action": f"action_{step}_{str(uuid.uuid4())}",
-                "observation": f"observation_{step}_{str(uuid.uuid4())}",
-                "answer": f"answer_{step}_{str(uuid.uuid4())}"
-            }
-            # 更新实例的message_ids，确保其他地方也能使用
-            self.message_ids = message_ids
-            
-            # 确保消息历史不为空，并且格式正确
-            if not self.messages:
-                # 如果消息历史为空，添加一个默认的系统消息
-                self.messages.append({"role": "system", "content": self.system})
-            
-            response = self.client.chat.completions.create(
-                model="hunyuan-turbo",
-                messages=self.messages,
-                stream=True
+        try:
+            response = await client.chat.completions.create(
+                model="hunyuan-turbo", 
+                messages=messages,
+                tools=tools if tools else None,
+                tool_choice="auto" if tools else "none",
             )
-            full_response = ""
-            buffer = ""  # 用于累积可能被分割的前缀
-            filterflag = False
-
-            for chunk in response:
-                if chunk.choices[0].delta.content:
-                    content = chunk.choices[0].delta.content
-                    print(content, end="", flush=True)
-                    full_response += content
-                    
-                    # 累积内容，处理可能被分割的前缀
-                    buffer += content
-                    
-                    # 检测模式切换
-                    if "思考：" in buffer:
-                        # 提取"思考："后面的内容
-                        index = buffer.index("思考：")
-                        thinking_content = buffer[index + 3:]
-                        # 过滤掉思考内容中的行动和PAUSE
-                        if "行动：" in thinking_content:
-                            thinking_content = thinking_content.split("行动：")[0].strip()
-                        if "PAUSE" in thinking_content:
-                            thinking_content = thinking_content.replace("PAUSE", "").strip()
-                        self.current_mode = "thinking"
-                        self.thinking_buffer = thinking_content
-                        
-                        if on_output and thinking_content:
-                            on_output({
-                                "id": message_ids["thinking"],
-                                "type": "thinking",
-                                "content": thinking_content,
-                                "is_append": False,
-                                "step": step
-                            })
-                        
-                        filterflag = True
-                        # 清空缓冲区
-                        buffer = ""
-                    elif "回答：" in buffer:
-                        # 提取"回答："后面的内容
-                        index = buffer.index("回答：")
-                        answer_content = buffer[index + 3:]
-                        self.current_mode = "answer"
-                        self.answer_buffer = answer_content
-                        
-                        if on_output and answer_content:
-                            on_output({
-                                "id": message_ids["answer"],
-                                "type": "answer",
-                                "content": answer_content,
-                                "is_append": False,
-                                "step": step
-                            })
-                        
-                        filterflag = True
-                        # 清空缓冲区
-                        buffer = ""
-                    elif self.current_mode == "thinking" and content:
-                        filtered_content = content                       
-                        # 过滤掉思考内容中的行动
-                        if "行动" in filtered_content:
-                            filterflag = False
-
-                        # 发送思考内容的追加
-                        if filtered_content and filterflag:
-                            self.thinking_buffer += filtered_content
-                            if on_output:
-                                on_output({
-                                    "id": message_ids["thinking"],
-                                    "type": "thinking",
-                                    "content": filtered_content,
-                                    "is_append": True,
-                                    "step": step
-                                })
-                    elif self.current_mode == "answer" and content:
-                        filtered_content = content
-                        # 发送回答内容的追加
-                        if filtered_content:
-                            self.answer_buffer += filtered_content
-                            if on_output:
-                                on_output({
-                                    "id": message_ids["answer"],
-                                    "type": "answer",
-                                    "content": filtered_content,
-                                    "is_append": True,
-                                    "step": step
-                                })
-            print()
-            return full_response
-    
-    bot = StreamingAgent(system_prompt)
-    next_prompt = question
-    process = {
-        "question": question,
-        "steps": [],
-        "final_answer": ""
-    }
-    
-    # 首先添加用户的初始问题
-    user_message = {
-        "role": "user",
-        "content": question
-    }
-    bot.messages.append(user_message)
-    
-    while i < max_turns:
-        i += 1
-        # 执行AI推理
-        result = bot.execute(step=i)
-        thinking = ""
-        action = ""
-        action_input = ""
-        lines = result.split('\n')
-        for line in lines:
-            if line.strip().startswith('思考：'):
-                thinking = line.strip()[3:]
-            elif line.strip().startswith('行动：'):
-                match = action_re.match(line.strip())
-                if match:
-                    action, action_input = match.groups()
+        except Exception as e:
+            error_msg = f"大模型请求失败: {str(e)}"
+            print(error_msg)
+            if on_output:
+                await on_output({"id": str(uuid.uuid4()), "type": "error", "content": error_msg, "is_append": False, "session_id": session_id})
+            return {"question": question, "final_answer": error_msg, "turns": turn}
         
-        actions = [
-            action_re.match(a) 
-            for a in result.split('\n') 
-            if action_re.match(a)
-        ]
+        message = response.choices[0].message
+        messages.append(message.model_dump(exclude_none=True))
         
-        # 将AI的响应添加到消息历史中
-        assistant_message = {
-            "role": "assistant",
-            "content": result
-        }
-        bot.messages.append(assistant_message)
-        
-        if actions:
-            action, action_input = actions[0].groups()
-            
-            # 处理"回答"行动
-            if action == "回答":
-                # 提取回答内容
-                answer_lines = []
-                capture_answer = True
-                for line in lines:
-                    if line.strip().startswith('回答：'):
-                        answer_content = line.strip()[3:]
-                        # 过滤掉PAUSE
-                        if 'PAUSE' not in answer_content:
-                            answer_lines.append(answer_content)
-                    elif capture_answer:
-                        if line.strip().startswith('思考：') or (line.strip().startswith('行动：') and not '回答' in line):
-                            break
-                        # 过滤掉PAUSE
-                        if 'PAUSE' not in line:
-                            answer_lines.append(line)
+        if message.tool_calls:
+            for tool_call in message.tool_calls:
+                func_name = tool_call.function.name
+                try:
+                    func_args = json.loads(tool_call.function.arguments)
+                except json.JSONDecodeError:
+                    func_args = {}
                 
-                if answer_lines:
-                    final_answer = '\n'.join(answer_lines).strip()
-                    process["final_answer"] = final_answer
-                    
-                    # 发送最终回答到前端
-                    # if on_output:
-                    #     on_output({
-                    #         "id": bot.message_ids["answer"],
-                    #         "type": "answer",
-                    #         "content": final_answer,
-                    #         "is_append": False,
-                    #         "step": i
-                    #     })
-                    
-                    process["steps"].append({
-                        "step": i,
-                        "thinking": thinking,
-                        "action": action,
-                        "action_input": action_input,
-                        "observation": "",
-                        "answer": final_answer
+                if on_output:
+                    await on_output({
+                        "id": str(uuid.uuid4()), "type": "action", 
+                        "content": f"正在查询天文数据库：{func_name}({func_args})", 
+                        "is_append": False, "session_id": session_id
                     })
                 
-                return process
-            
-            if action not in known_actions:
-                raise Exception(f"未知行动: {action}: {action_input}")
-            
-            print(f" -- 执行 {action} {action_input}")
-            if on_output:
-                on_output({
-                    "id": bot.message_ids["action"],
-                    "type": "action",
-                    "content": f"执行工具: {action}\n参数: {action_input}",
-                    # "data": {
-                    #     "action": action,
-                    #     "input": action_input
-                    # },
-                    "is_append": False
-                })
-            
-            import json
-            params_dict = json.loads(action_input)
-            observation = tool_registry.execute_tool(action, **params_dict)
-            
-            print("观察:", observation)
-            if on_output:
-                on_output({
-                    "id": bot.message_ids["observation"],
-                    "type": "observation",
-                    "content": f"观察结果: {str(observation)}",
-                    "is_append": False
-                })
-            
-            observation_str = str(observation)
-            
-            # 为下一轮对话添加用户消息，包含观察结果
-            user_message = {
-                "role": "user",
-                "content": f"观察: {observation_str}"
-            }
-            bot.messages.append(user_message)
-            
-            process["steps"].append({
-                "step": i,
-                "thinking": thinking,
-                "action": action,
-                "action_input": action_input,
-                "observation": observation_str
-            })
-        else:
-            answer_lines = []
-            capture_answer = False
-            for line in lines:
-                if line.strip().startswith('回答：'):
-                    capture_answer = True
-                    answer_content = line.strip()[3:]
-                    # 过滤掉PAUSE
-                    if 'PAUSE' not in answer_content:
-                        answer_lines.append(answer_content)
-                elif line.strip().startswith('行动：回答'):
-                    # 处理"行动：回答 PAUSE"的情况
-                    capture_answer = True
-                elif capture_answer:
-                    if line.strip().startswith('思考：') or (line.strip().startswith('行动：') and not '回答' in line):
-                        break
-                    # 过滤掉PAUSE
-                    if 'PAUSE' not in line:
-                        answer_lines.append(line)
-            
-            if answer_lines:
-                final_answer = '\n'.join(answer_lines).strip()
-                process["final_answer"] = final_answer
+                # 执行本地天文工具
+                observation = tool_registry.execute_tool(func_name, **func_args)
                 
-                # 发送最终回答到前端
-                # if on_output:
-                #     on_output({
-                #         "id": bot.message_ids["answer"],
-                #         "type": "answer",
-                #         "content": final_answer,
-                #         "is_append": False,
-                #         "step": i
-                #     })
-                
-                process["steps"].append({
-                    "step": i,
-                    "thinking": thinking,
-                    "action": "",
-                    "action_input": "",
-                    "observation": "",
-                    "answer": final_answer
-                })
-                
-                return process
-            
-            if result.strip():
-                if "PAUSE" in result:
-                    pass
-                else:
-                    process["final_answer"] = result
-            
-            return process
-    
-    return process
+                # ==========================================
+                # 【核心拦截逻辑】：提取路径并对大模型隐身
+                # ==========================================
+                def extract_and_hide_paths(obj):
+                    if isinstance(obj, dict):
+                        keys_to_delete = []
+                        for k, v in obj.items():
+                            if isinstance(v, str) and ('\\download\\' in v or '/download/' in v):
+                                normalized = v.replace('\\', '/')
+                                rel_path = normalized.split('/download/')[-1]
+                                url = f"http://localhost:8000/downloads/{rel_path}"
+                                # 把生成的前端 URL 存到我们自己的列表里
+                                bypassed_links.append(f"\n\n📥 **[点击查看/下载完整原始数据 ({k})]({url})**")
+                                # 标记这个包含本地路径的键，准备删掉
+                                keys_to_delete.append(k) 
+                            elif isinstance(v, (dict, list)):
+                                extract_and_hide_paths(v)
+                                
+                        # 【对大模型隐身】从传给大模型的数据中删掉这个路径，它就看不见了！
+                        for k in keys_to_delete:
+                            del obj[k]
+                    elif isinstance(obj, list):
+                        for item in obj:
+                            extract_and_hide_paths(item)
 
-def run_interactive():
-    print("=== 天文数据智能代理 ===")
-    print("输入 'exit' 或 'quit' 退出对话")
-    print("输入 'reset' 重置对话状态")
-    print()
-    
-    while True:
-        try:
-            user_input = input("你: ")
-            if user_input.lower() in ["exit", "quit"]:
-                print("对话结束！")
-                break
-            if user_input.lower() == "reset":
-                print("对话状态已重置！")
-                continue
-            if not user_input.strip():
-                print("请输入内容，不能为空")
-                continue
-            print()
-            query(user_input)
-            print()
-        except KeyboardInterrupt:
-            print("\n对话被中断！")
-            break
-        except Exception as e:
-            print(f"错误: {e}")
-            continue
+                # 执行拦截
+                extract_and_hide_paths(observation)
+                # ==========================================
+
+                obs_str = json.dumps(observation, ensure_ascii=False, cls=NumpyEncoder)
+                
+                MAX_OBS_LENGTH = 1500 
+                if len(obs_str) > MAX_OBS_LENGTH:
+                    obs_str = obs_str[:MAX_OBS_LENGTH] + '...[数据过长已截断，请基于当前截断信息进行回答]'
+                
+                if on_output:
+                    status_content = f"工具调用失败：{observation.get('error')}，正在尝试修复..." if isinstance(observation, dict) and observation.get("status") == "error" else "获取到数据，正在解析核心信息..."
+                    await on_output({"id": str(uuid.uuid4()), "type": "observation", "content": status_content, "is_append": False, "session_id": session_id})
+                
+                messages.append({
+                    "role": "tool",
+                    "tool_call_id": tool_call.id,
+                    "name": func_name,
+                    "content": obs_str
+                })
+            continue 
+            
+        else:
+            # ==========================================
+            # 【最后一步】：物理拼接
+            # ==========================================
+            final_answer = message.content or "未返回内容"
+            
+            # 无论大模型说了啥，我们强制把刚才拦截到的链接贴在它回答的最下面！
+            if bypassed_links:
+                unique_links = list(set(bypassed_links)) # 去重
+                final_answer += "".join(unique_links)
+            
+            print(f"最终回答: {final_answer}")
+            
+            if on_output:
+                await on_output({
+                    "id": str(uuid.uuid4()),
+                    "type": "answer",
+                    "content": final_answer,
+                    "is_append": False,
+                    "session_id": session_id
+                })
+                
+            return {"question": question, "final_answer": final_answer, "turns": turn}
+
+    return {"question": question, "final_answer": "抱歉，经过多次查询未能得出最终结论。", "turns": turn}
+
 if __name__ == "__main__":
-    run_interactive()
+    async def main():
+        print("=== 天文数据智能代理 (Native Async 版) ===")
+        while True:
+            user_input = input("\n你: ")
+            if user_input.lower() in ["exit", "quit"]:
+                break
+            
+            async def dummy_output(msg):
+                print(f"[{msg['type'].upper()}] {msg['content']}")
+                
+            await query(user_input, on_output=dummy_output)
+
+    asyncio.run(main())

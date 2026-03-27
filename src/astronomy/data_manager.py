@@ -29,7 +29,7 @@ class AstronomyDataManager:
             "OpenClust": "Open Cluster"
         }
         # 保存目录
-        self.save_dir = "d:\\Users\\27036\\Documents\\trae_projects\\llm\\download"
+        self.save_dir = "d:\\Users\\27036\\Documents\\trae_projects\\llm_project_1\\download"
     
     def get_astronomy_object(self, object_name: str) -> Dict[str, Any]:
         """
@@ -710,17 +710,21 @@ if __name__ == "__main__":
     spectra_result = manager.get_spectra(object_name, max_spectra=3)
     print(f"结果: {spectra_result}")
     
+    print("\n5. 测试获取天文对象查询:")
+    object_result = manager.get_astronomy_object(object_name)
+    print(f"结果: {object_result}")
+
     # 5. 测试执行ADQL查询
-    print("\n5. 测试执行ADQL查询:")
-    adql_query = """
-    SELECT TOP 5
-       source_id, ra, dec, parallax, phot_g_mean_mag
-    FROM gaiadr3.gaia_source
-    WHERE phot_g_mean_mag < 14
-    ORDER BY phot_g_mean_mag
-    """
-    adql_result = manager.query_adql(adql_query)
-    print(f"结果: {adql_result}")
+    # print("\n5. 测试执行ADQL查询:")
+    # adql_query = """
+    # SELECT TOP 5
+    #    source_id, ra, dec, parallax, phot_g_mean_mag
+    # FROM gaiadr3.gaia_source
+    # WHERE phot_g_mean_mag < 14
+    # ORDER BY phot_g_mean_mag
+    # """
+    # adql_result = manager.query_adql(adql_query)
+    # print(f"结果: {adql_result}")
     
 
     print("\n" + "=" * 60)

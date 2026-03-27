@@ -1,319 +1,223 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from contextlib import asynccontextmanager
 import asyncio
 import json
 import time
+import os
 import uuid
-from typing import Dict, Any, AsyncGenerator, Set
 
-# 导入Agent模块
 from src.agent.core import query
+from src.agent.tools import tool_registry
 
-app = FastAPI()
+# ==========================================
+# 多会话持久化管理
+# ==========================================
+message_queue = asyncio.Queue()
+SESSIONS_FILE = "sessions.json"
+sessions_data = {} 
 
-# 配置CORS
+def load_sessions():
+    global sessions_data
+    if os.path.exists(SESSIONS_FILE):
+        try:
+            with open(SESSIONS_FILE, "r", encoding="utf-8") as f:
+                sessions_data = json.load(f)
+                print(f"✅ 已加载 {len(sessions_data)} 个历史会话")
+        except Exception as e:
+            print(f"❌ 加载会话失败: {e}")
+            sessions_data = {}
+    
+    # 如果没有会话，默认创建一个
+    if not sessions_data:
+        create_new_session_data()
+
+def create_new_session_data():
+    new_id = str(uuid.uuid4())
+    sessions_data[new_id] = {
+        "id": new_id,
+        "title": "新观测任务",
+        "updated_at": time.time(),
+        "messages": []
+    }
+    save_sessions()
+    return new_id
+
+def save_sessions():
+    try:
+        with open(SESSIONS_FILE, "w", encoding="utf-8") as f:
+            json.dump(sessions_data, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"❌ 保存会话失败: {e}")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    load_sessions()
+    yield
+
+app = FastAPI(lifespan=lifespan)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # 前端地址
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# 连接管理：存储每个连接的信息
-class ConnectionManager:
-    def __init__(self):
-        # 存储连接ID到队列和消息历史的映射
-        self.connections: Dict[str, Dict[str, Any]] = {}
-    
-    def add_connection(self, connection_id: str, message_queue: asyncio.Queue):
-        """添加新连接"""
-        self.connections[connection_id] = {
-            "queue": message_queue,
-            "messages": []  # 每个连接的消息历史
-        }
-    
-    def remove_connection(self, connection_id: str):
-        """移除连接"""
-        if connection_id in self.connections:
-            del self.connections[connection_id]
-    
-    def get_messages(self, connection_id: str) -> list:
-        """获取连接的消息历史"""
-        if connection_id in self.connections:
-            return self.connections[connection_id]["messages"]
-        return []
-    
-    def add_message(self, connection_id: str, message: Dict[str, Any]):
-        """添加消息到连接的历史"""
-        if connection_id in self.connections:
-            self.connections[connection_id]["messages"].append(message)
-    
-    async def send_message(self, connection_id: str, message: Dict[str, Any]):
-        """发送消息到指定连接"""
-        if connection_id in self.connections:
-            try:
-                await self.connections[connection_id]["queue"].put(message)
-            except Exception:
-                # 连接已关闭，从集合中移除
-                self.remove_connection(connection_id)
+os.makedirs("download", exist_ok=True)
+app.mount("/downloads", StaticFiles(directory="download"), name="downloads")
 
-# 创建连接管理器实例
-manager = ConnectionManager()
+# ==========================================
+# RESTful API：会话管理
+# ==========================================
+@app.get("/api/sessions")
+async def get_sessions():
+    """获取所有会话列表（按时间倒序）"""
+    sorted_sessions = sorted(sessions_data.values(), key=lambda x: x["updated_at"], reverse=True)
+    return [{"id": s["id"], "title": s["title"], "updated_at": s["updated_at"]} for s in sorted_sessions]
 
-# SSE端点
+@app.get("/api/sessions/{session_id}")
+async def get_session_messages(session_id: str):
+    """获取指定会话的历史消息"""
+    if session_id in sessions_data:
+        return sessions_data[session_id]["messages"]
+    return []
+
+@app.post("/api/sessions")
+async def create_session():
+    """新建会话"""
+    new_id = create_new_session_data()
+    return {"id": new_id}
+
+@app.delete("/api/sessions/{session_id}")
+async def delete_session(session_id: str):
+    """删除指定会话"""
+    if session_id in sessions_data:
+        del sessions_data[session_id]
+        save_sessions()
+        if not sessions_data:
+            create_new_session_data() # 删空了就自动补一个
+    return {"success": True}
+
+@app.get("/api/tools")
+async def get_tools_list():
+    """动态获取后端注册的所有工具 (供前端工具箱展示)"""
+    openai_tools = tool_registry.get_openai_tools()
+    formatted_tools = []
+    
+    for tool in openai_tools:
+        func = tool["function"]
+        # 将 JSON Schema 格式的参数，转化为漂亮的前端展示字符串
+        props = func.get("parameters", {}).get("properties", {})
+        if not props:
+            param_str = "{\n  // 无需参数\n}"
+        else:
+            param_str = "{\n"
+            for k, v in props.items():
+                desc = v.get("description", "")
+                # 把描述信息缩短一点，防止前端换行太丑
+                short_desc = desc.split("。")[0] if desc else "" 
+                param_str += f'  "{k}": "{v.get("type", "string")}" // {short_desc}\n'
+            param_str += "}"
+            
+        formatted_tools.append({
+            "name": func["name"],
+            "description": func["description"],
+            "params": param_str
+        })
+        
+    return formatted_tools
+    
+# ==========================================
+# 对话核心 API
+# ==========================================
 @app.get("/sse")
 async def sse_endpoint():
-    """SSE端点，用于实时推送消息"""
-    # 生成唯一连接ID
-    connection_id = str(uuid.uuid4())
-    # 创建一个队列用于接收消息
-    message_queue = asyncio.Queue()
-    # 添加到连接管理器
-    manager.add_connection(connection_id, message_queue)
-    
+    """实时流数据推送 (不再推送历史记录，历史记录由前端调 REST 接口获取)"""
     async def event_generator():
-        try:
-            # 发送连接ID消息
-            connection_msg = {
-                "type": "connection",
-                "content": "Connected",
-                "connectionId": connection_id,
-                "role": "system",
-                "timestamp": time.time()
-            }
-            yield "data: " + json.dumps(connection_msg) + "\n\n"
+        yield f"data: {json.dumps({'type': 'connection', 'connectionId': 'local-agent'})}\n\n"
+        while True:
+            message = await message_queue.get()
+            yield f"data: {json.dumps(message)}\n\n"
             
-            # 发送历史消息
-            for msg in manager.get_messages(connection_id):
-                yield "data: " + json.dumps(msg) + "\n\n"
-            
-            # 持续监听消息
-            while True:
-                # 等待消息
-                message = await message_queue.get()
-                yield "data: " + json.dumps(message) + "\n\n"
-                
-                # 处理心跳
-                if message.get("type") == "heartbeat":
-                    await asyncio.sleep(30)
-        finally:
-            # 连接关闭时移除
-            manager.remove_connection(connection_id)
-    
     return StreamingResponse(
         event_generator(),
         media_type="text/event-stream",
-        headers={
-            "X-Connection-ID": connection_id  # 在响应头中返回连接ID
-        }
+        headers={"Cache-Control": "no-cache", "Connection": "keep-alive"}
     )
 
-# 聊天端点
 @app.post("/chat")
 async def chat_endpoint(request: Request):
-    """处理聊天消息"""
     try:
         data = await request.json()
         message = data.get("message", "")
-        connection_id = data.get("connectionId")
+        session_id = data.get("session_id", "")
         
-        print(f"收到消息: {message}")
-        print(f"连接ID: {connection_id}")
-        print(f"数据: {data}")
+        if not message or session_id not in sessions_data:
+            return {"error": "Invalid request"}
         
-        if not message:
-            print("错误: 消息为空")
-            return {"error": "Message is required"}
-        
-        if not connection_id:
-            print("错误: 连接ID为空")
-            return {"error": "Connection ID is required"}
-        
-        # 检查连接是否存在
-        if connection_id not in manager.connections:
-            print(f"错误: 连接ID不存在: {connection_id}")
-            return {"error": "Connection ID not found"}
-        
-        # 发送思考状态
-        thinking_msg = {
-            "id": str(len(manager.get_messages(connection_id)) + 1),
-            "type": "thinking",
-            "content": "AI正在思考...",
-            "role": "assistant",
+        # 【修复 BUG】明确将用户的提问写入当前会话中！
+        user_msg = {
+            "id": str(uuid.uuid4()),
+            "type": "answer",
+            "content": message,
+            "role": "user",
             "timestamp": time.time()
         }
-        manager.add_message(connection_id, thinking_msg)
-        await manager.send_message(connection_id, thinking_msg)
+        sessions_data[session_id]["messages"].append(user_msg)
         
-        # 调用Agent处理消息
-        try:
-            # 重定向标准输出，捕获Agent的打印内容
-            import sys
-            import io
-            from contextlib import redirect_stdout
-            
-            # 创建一个字符串IO对象来捕获输出
-            f = io.StringIO()
-            
-            # 流式输出回调函数
-            async def on_output(output):
-                # 构建消息
-                msg = {
-                    "id": output.get("id", str(len(manager.get_messages(connection_id)) + 1)),
-                    "type": output["type"],
-                    "content": output["content"],
-                    "role": "assistant",
-                    "timestamp": time.time(),
-                    "is_append": output.get("is_append", False)
-                }
-                # 添加数据（如果有）
-                if "data" in output:
-                    msg["data"] = output["data"]
-                
-                # 直接发送消息，不做额外处理
-                # 前端会根据is_append字段和消息ID来处理消息的累积显示
-                await manager.send_message(connection_id, msg)
-                
-                # 同时更新消息历史
-                if not output.get("is_append", False):
-                    # 对于新消息，添加到历史
-                    manager.add_message(connection_id, msg)
-                else:
-                    # 对于追加消息，更新历史中的对应消息
-                    messages = manager.get_messages(connection_id)
-                    existing_msg = None
-                    for m in messages:
-                        if m.get("id") == msg["id"]:
-                            existing_msg = m
-                            break
-                    
-                    if existing_msg:
-                        existing_msg["content"] += msg["content"]
-                        existing_msg["timestamp"] = time.time()
-            
-            # 在后台线程中执行Agent处理，避免阻塞事件循环
-            import concurrent.futures
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                # 使用redirect_stdout捕获输出
-                def query_with_output_capture(msg):
-                    with redirect_stdout(f):
-                        # 定义一个同步回调，内部调用异步函数
-                        def sync_on_output(output):
-                            # 在后台线程中创建一个新的事件循环并运行回调
-                            loop = asyncio.new_event_loop()
-                            asyncio.set_event_loop(loop)
-                            try:
-                                loop.run_until_complete(on_output(output))
-                            finally:
-                                loop.close()
-                        return query(msg, on_output=sync_on_output)
-                
-                ai_response = await asyncio.get_event_loop().run_in_executor(
-                    executor, query_with_output_capture, message
-                )
-            
-            # 获取并打印捕获的输出
-            captured_output = f.getvalue()
-            if captured_output:
-                print("=== Agent 输出 ===")
-                print(captured_output)
-                print("=== 捕获输出结束 ================")
-            
-            print(f"Agent 原始响应: {ai_response}")
-
-            # 处理Agent返回的完整过程（作为备份，以防流式输出有遗漏）
-            # if isinstance(ai_response, dict) and "steps" in ai_response:
-            #     # 检查是否已经有回答消息
-            #     has_answer = any(step.get("answer") for step in ai_response["steps"])
-            #     if not has_answer:
-            #         # 如果没有回答消息，发送最终回答
-            #         for step in ai_response["steps"]:
-            #             if step.get("answer"):
-            #                 answer_msg = {
-            #                     "id": str(len(manager.get_messages(connection_id)) + 1),
-            #                     "type": "answer",
-            #                     "content": step["answer"],
-            #                     "role": "assistant",
-            #                     "timestamp": time.time()
-            #                 }
-            #                 manager.add_message(connection_id, answer_msg)
-            #                 await manager.send_message(connection_id, answer_msg)
-            #                 break
-            # else:
-            #     # 兼容旧格式，直接发送响应
-            #     # 检查是否已经发送过消息
-            #     recent_messages = manager.get_messages(connection_id)
-            #     has_recent_answer = any(msg.get("type") == "answer" for msg in recent_messages[-5:])
-            #     if not has_recent_answer:
-            #         ai_msg = {
-            #             "id": str(len(manager.get_messages(connection_id)) + 1),
-            #             "type": "answer",
-            #             "content": str(ai_response),
-            #             "role": "assistant",
-            #             "timestamp": time.time()
-            #         }
-            #         manager.add_message(connection_id, ai_msg)
-            #         await manager.send_message(connection_id, ai_msg)
-            
-            return {"success": True, "message": "Message received"}
-            
-        except Exception as e:
-            # 发送错误消息
-            error_msg = {
-                "id": str(len(manager.get_messages(connection_id)) + 1),
-                "type": "error",
-                "content": f"处理消息时出错: {str(e)}",
+        # 智能重命名会话标题
+        if sessions_data[session_id]["title"] == "新观测任务":
+            sessions_data[session_id]["title"] = message[:12] + ("..." if len(message) > 12 else "")
+        
+        sessions_data[session_id]["updated_at"] = time.time()
+        
+        # 推送占位消息
+        thinking_msg = {
+            "id": str(uuid.uuid4()),
+            "type": "thinking",
+            "content": "AI正在思考并调用工具...",
+            "role": "assistant",
+            "timestamp": time.time(),
+            "session_id": session_id # 带上 session_id，防止前端串台
+        }
+        sessions_data[session_id]["messages"].append(thinking_msg)
+        await message_queue.put(thinking_msg)
+        
+        async def on_output(output):
+            msg = {
+                "id": output.get("id", str(uuid.uuid4())),
+                "type": output["type"],
+                "content": output["content"],
                 "role": "assistant",
-                "timestamp": time.time()
+                "timestamp": time.time(),
+                "is_append": output.get("is_append", False),
+                "session_id": session_id
             }
-            manager.add_message(connection_id, error_msg)
-            await manager.send_message(connection_id, error_msg)
+            await message_queue.put(msg)
             
-            return {"error": str(e)}
+            # 更新本地内存
+            if not msg["is_append"]:
+                sessions_data[session_id]["messages"].append(msg)
+            else:
+                for m in sessions_data[session_id]["messages"]:
+                    if m.get("id") == msg["id"]:
+                        m["content"] += msg["content"]
+                        break
+            
+            sessions_data[session_id]["updated_at"] = time.time()
+            save_sessions()
+
+        await query(message, session_id=session_id, on_output=on_output)
+        return {"success": True}
         
     except Exception as e:
+        print(f"❌ 发生错误: {e}")
         return {"error": str(e)}
-
-# 健康检查端点
-@app.get("/health")
-async def health_check():
-    """健康检查"""
-    return {"status": "healthy"}
-
-# 根路径
-@app.get("/")
-async def root():
-    """根路径"""
-    return {"message": "AI Agent API"}
-
-# 心跳任务
-async def heartbeat_task():
-    """定期发送心跳"""
-    while True:
-        await asyncio.sleep(30)
-        # 为每个连接单独发送心跳
-        for connection_id in list(manager.connections.keys()):
-            heartbeat = {
-                "type": "heartbeat",
-                "content": "pong",
-                "role": "system",
-                "timestamp": time.time()
-            }
-            await manager.send_message(connection_id, heartbeat)
-
-# 启动心跳任务
-@app.on_event("startup")
-async def startup_event():
-    """启动事件"""
-    asyncio.create_task(heartbeat_task())
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(
-        "server:app",
-        host="localhost",
-        port=8000,
-        reload=True
-    )
+    uvicorn.run("server:app", host="localhost", port=8000, reload=True)

@@ -1,17 +1,14 @@
 from typing import Dict, List, Any, Callable, Optional
 from dataclasses import dataclass
 
-
 @dataclass
 class Tool:
     """工具类"""
-
     name: str
     description: str
     func: Callable
     parameters: Dict[str, Any]
     returns: str
-
 
 class ToolRegistry:
     """工具注册表"""
@@ -20,24 +17,8 @@ class ToolRegistry:
         """初始化工具注册表"""
         self.tools: Dict[str, Tool] = {}
 
-    def register_tool(
-        self,
-        name: str,
-        description: str,
-        func: Callable,
-        parameters: Dict[str, Any],
-        returns: str,
-    ) -> None:
-        """
-        注册工具
-
-        Args:
-            name: 工具名称
-            description: 工具描述
-            func: 工具函数
-            parameters: 参数定义
-            returns: 返回值描述
-        """
+    def register_tool(self, name: str, description: str, func: Callable, parameters: Dict[str, Any], returns: str) -> None:
+        """注册工具"""
         tool = Tool(
             name=name,
             description=description,
@@ -48,79 +29,76 @@ class ToolRegistry:
         self.tools[name] = tool
 
     def get_tool(self, name: str) -> Optional[Tool]:
-        """
-        获取工具
-
-        Args:
-            name: 工具名称
-
-        Returns:
-            工具对象，如果不存在则返回 None
-        """
         return self.tools.get(name)
 
     def get_all_tools(self) -> List[Tool]:
-        """
-        获取所有工具
-
-        Returns:
-            工具列表
-        """
         return list(self.tools.values())
 
-    def get_tool_descriptions(self) -> str:
-        """
-        获取工具描述
-
-        Returns:
-            工具描述字符串
-        """
-        descriptions = []
+    # ==========================================
+    # 核心改造：生成原生的 OpenAI Tools 格式
+    # ==========================================
+    def get_openai_tools(self) -> List[Dict[str, Any]]:
+        """获取兼容 OpenAI Function Calling 格式的工具列表"""
+        openai_tools = []
         for tool in self.tools.values():
-            param_desc = ", ".join(
-                [
-                    f"{name}: {info['description']}"
-                    for name, info in tool.parameters.items()
-                ]
-            )
-            descriptions.append(
-                f"{tool.name}: {tool.description}。参数: {param_desc}。返回: {tool.returns}"
-            )
-        return "\n".join(descriptions)
+            properties = {}
+            required = []
+            
+            for param_name, info in tool.parameters.items():
+                properties[param_name] = {
+                    "type": info.get("type", "string"),
+                    "description": info.get("description", "")
+                }
+                # 【修复 1】只有没有 default 默认值的参数，才强制要求大模型必填
+                if "default" not in info:
+                    required.append(param_name)
+                
+            openai_tool = {
+                "type": "function",
+                "function": {
+                    "name": tool.name,
+                    "description": tool.description,
+                    "parameters": {
+                        "type": "object",
+                        "properties": properties,
+                        "required": required
+                    }
+                }
+            }
+            openai_tools.append(openai_tool)
+            
+        return openai_tools
 
     def execute_tool(self, name: str, **kwargs) -> Any:
-        """
-        执行工具
-
-        Args:
-            name: 工具名称
-            **kwargs: 工具参数
-
-        Returns:
-            工具执行结果
-        """
+        """执行工具"""
         tool = self.get_tool(name)
         if not tool:
-            raise ValueError(f"工具 {name} 不存在")
+            return {"error": f"工具 {name} 不存在", "status": "error"}
 
-        # 打印工具执行信息
         print("-----------------------------------------------")
-        print(f"执行工具: {name}, 参数: {kwargs}")
+        print(f"🔧 执行工具: {name}, 参数: {kwargs}")
 
         try:
-            # 验证参数
-            for param_name in tool.parameters:
+            # 【修复 2】如果大模型没传可选参数，自动补全默认值
+            for param_name, info in tool.parameters.items():
                 if param_name not in kwargs:
-                    raise ValueError(f"缺少必要参数: {param_name}")
+                    if "default" in info:
+                        kwargs[param_name] = info["default"]
+                    else:
+                        raise ValueError(f"缺少必要参数: {param_name}")
 
-            # 执行工具
             result = tool.func(**kwargs)
-            # 如果结果包含多个星体信息，只保留前5个
-            if isinstance(result, dict) and 'results' in result and isinstance(result['results'], list):
-                if len(result['results']) > 5:
-                    result['results'] = result['results'][:5]
-                    result['message'] = f"找到 {result.get('count', len(result['results']))} 个对象，显示前5个"
+            
+            if isinstance(result, dict) and 'images' in result:
+                return {
+                    "status": "success",
+                    "data_type": "images_list",
+                    "count": len(result['images']),
+                    "links": result['images'][:3], # 只给它前三个，节省 Token
+                    "note": "请将上述 links 转换为 Markdown 下载链接展示给用户"
+                }
             
             return result
         except Exception as e:
+            # 返回明确的错误结构
             return {"error": str(e), "status": "error"}

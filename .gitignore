@@ -8,6 +8,7 @@ build/
 develop-eggs/
 dist/
 downloads/
+download/
 eggs/
 .eggs/
 lib/
@@ -53,4 +54,6 @@ Thumbs.db
 *.tmp
 *.temp
 .history/
+1.txt
+sessions.json
 .ruff_cache/
