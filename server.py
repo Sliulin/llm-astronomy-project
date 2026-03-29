@@ -1,4 +1,5 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, File, UploadFile
+import shutil
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -107,6 +108,33 @@ async def get_tools_list():
     """动态获取后端注册的所有工具 (包含分类信息，供前端工具箱展示)"""
     return tool_registry.get_frontend_tools()
     
+UPLOAD_DIR = os.path.abspath("upload")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+@app.post("/api/upload")
+async def upload_file(file: UploadFile = File(...)):
+    """接收前端上传的文件并保存到本地"""
+    try:
+        # 为了防止重名覆盖，给文件名加个时间戳前缀
+        timestamp = time.strftime("%Y%m%d_%H%M%S")
+        safe_filename = f"{timestamp}_{file.filename}"
+        file_path = os.path.join(UPLOAD_DIR, safe_filename)
+        
+        # 将上传的文件流写入本地磁盘
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+            
+        print(f"✅ 文件已成功上传至: {file_path}")
+        
+        return {
+            "success": True,
+            "message": "文件上传成功",
+            "filename": file.filename,
+            "file_path": file_path # 把在服务器上的绝对路径返回给前端
+        }
+    except Exception as e:
+        print(f"❌ 上传文件失败: {e}")
+        return {"success": False, "error": str(e)}
 # ==========================================
 # 对话核心 API
 # ==========================================

@@ -36,12 +36,12 @@ SYSTEM_PROMPT = """你是一个专业的天文数据智能助手。
 【输出规范 - 必须严格遵守】：
 1. 语言：始终使用中文回答。
 2. 严禁原文：绝对禁止直接输出工具返回的 JSON 源代码或 Python 字典格式。
-3. 数据整理：请从工具返回的复杂数据中提取核心信息（如名称、坐标、红移、数量等），并整理成自然的中文句子或 Markdown 表格。
+3. 数据整理：请从工具返回的复杂数据中提取核心信息（如名称、坐标、红移、数量等），并整理成自然的 Markdown 表格。
 4. 链接渲染：当遇到 .fits 或 .fits.gz 图像链接时，必须将其转化为标准的 Markdown 链接。
    - 格式：[文字描述](链接地址)
    - 示例：[点击下载 M31 的 FITS 图像](https://ned.ipac.caltech.edu/...)
    - 注意：方括号 [] 和 圆括号 () 之间严禁有任何空格。
-
+5. 如果收到图像链接saved_image_path，不要输出任何链接，系统会自动在你的回答末尾生成正确的下载卡片，你只需在正文中用文字告知用户“文件已成功生成”即可。
 【当前环境】：
 所有的图像存储在本地 download/ 目录下，或指向远程 NED 数据库。如果是本地路径，请确保链接正确。"""
 
@@ -110,24 +110,25 @@ async def query(question: str, session_id: str = "default", max_turns: int = 5, 
                 # 执行本地天文工具
                 observation = await asyncio.to_thread(tool_registry.execute_tool, func_name, **func_args)
                 # ==========================================
-                # 【核心拦截逻辑】：提取路径并对大模型隐身
+                # 【核心拦截逻辑】：提取路径生成下载链接，但保留原字段供大模型调用
                 # ==========================================
                 def extract_and_hide_paths(obj):
                     if isinstance(obj, dict):
-                        keys_to_delete = []
+                        # 我们移除了 keys_to_delete 机制，不再删除原始路径
                         for k, v in obj.items():
                             if isinstance(v, str) and ('\\download\\' in v or '/download/' in v):
                                 normalized = v.replace('\\', '/')
                                 rel_path = normalized.split('/download/')[-1]
                                 url = f"http://localhost:8000/downloads/{rel_path}"
-                                # 把生成的前端 URL 存到我们自己的列表里
+                                # 把生成的前端 URL 存到全局的 bypassed_links 列表里，最后附在回答末尾
                                 bypassed_links.append(f"\n\n**[原始数据已下载到downloads目录<br><span style='margin-left: 1.2em;'>点击查看原始数据 ({k})</span>]({url})**")
-                                keys_to_delete.append(k) 
+                                
+                                # 这里不再执行 keys_to_delete.append(k) 
+                                # 从而将 saved_path 完整保留给大模型
+                                
                             elif isinstance(v, (dict, list)):
                                 extract_and_hide_paths(v)
                                 
-                        for k in keys_to_delete:
-                            del obj[k]
                     elif isinstance(obj, list):
                         for item in obj:
                             extract_and_hide_paths(item)
@@ -159,6 +160,10 @@ async def query(question: str, session_id: str = "default", max_turns: int = 5, 
             # 【最后一步】：物理拼接
             # ==========================================
             final_answer = message.content or "未返回内容"
+            
+            import re
+            final_answer = re.sub(r'\[[^\]]*\]\((sandbox:|file:|\./|\.\\)[^\)]*\)', '', final_answer)
+            final_answer = final_answer.strip() # 清理残留的空行
             
             # 无论大模型说了啥，我们强制把刚才拦截到的链接贴在它回答的最下面！
             if bypassed_links:

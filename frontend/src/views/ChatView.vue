@@ -42,7 +42,7 @@
           
           <div class="flex-1 max-w-[85%]" :class="msg.role === 'user' ? 'text-right' : 'text-left'">
             <div v-if="msg.role === 'user'" class="inline-block bg-gray-800 border border-gray-700 rounded-2xl px-5 py-3 text-gray-100 whitespace-pre-wrap text-left">
-              {{ msg.content }}
+              {{ formatUserMessage(msg.content) }}
             </div>
             
             <div v-else class="inline-block w-full">
@@ -62,24 +62,71 @@
 
       <div class="p-4 bg-gray-900 border-t border-gray-800">
         <div class="max-w-4xl mx-auto relative">
-          <form @submit.prevent="sendMessage" class="relative flex items-end bg-gray-800 rounded-2xl border border-gray-700 shadow-lg overflow-hidden focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/50 transition-all">
-            <textarea 
-              v-model="userInput"
-              @keydown.enter.prevent="handleEnter"
-              placeholder="输入天文指令..." 
-              class="flex-1 bg-transparent border-none py-4 px-5 text-gray-100 placeholder-gray-500 focus:outline-none resize-none max-h-48 min-h-[56px]"
-              rows="1"
-            ></textarea>
-            <div class="p-2">
-              <button type="submit" :disabled="!userInput.trim() || isSending" class="p-2 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-xl transition-colors flex items-center justify-center h-10 w-10">
-                <svg v-if="!isSending" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" /></svg>
-                <span v-else class="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full"></span>
-              </button>
+          <form @submit.prevent="sendMessage" class="relative flex flex-col bg-gray-800 rounded-2xl border border-gray-700 shadow-lg overflow-hidden focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/50 transition-all">
+            
+            <div v-if="attachedFile" class="px-4 pt-3 pb-1 flex items-center">
+              <div class="flex items-center bg-gray-700/80 text-sm text-gray-200 px-3 py-1.5 rounded-lg border border-gray-600 shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                </svg>
+                <span class="truncate max-w-[200px]">{{ attachedFile.name }}</span>
+                <button type="button" @click="removeAttachment" class="ml-3 text-gray-400 hover:text-red-400 transition-colors focus:outline-none">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="relative flex items-end w-full">
+              <div class="p-2 flex items-center justify-center">
+                <input 
+                  type="file" 
+                  ref="fileInputRef" 
+                  class="hidden" 
+                  accept=".json,.csv,.txt,.fits" 
+                  @change="handleFileUpload"
+                />
+                <button 
+                  type="button"
+                  @click="triggerUpload" 
+                  :disabled="isUploading"
+                  class="p-2 text-gray-400 hover:text-blue-400 transition-colors disabled:opacity-50 flex items-center justify-center h-10 w-10 rounded-xl hover:bg-gray-700"
+                  title="上传本地数据文件"
+                >
+                  <svg v-if="!isUploading" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                  </svg>
+                  <svg v-else class="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                </button>
+              </div>
+
+              <textarea 
+                v-model="userInput"
+                @keydown.enter.prevent="handleEnter"
+                placeholder="输入天文指令..." 
+                class="flex-1 bg-transparent border-none py-4 px-2 text-gray-100 placeholder-gray-500 focus:outline-none resize-none max-h-48 min-h-[56px]"
+                rows="1"
+              ></textarea>
+
+              <div class="p-2">
+                <button 
+                  type="submit" 
+                  :disabled="!userInput.trim() || isSending" 
+                  class="p-2 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-xl transition-colors flex items-center justify-center h-10 w-10"
+                >
+                  <svg v-if="!isSending" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" /></svg>
+                  <span v-else class="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full"></span>
+                </button>
+              </div>
             </div>
           </form>
         </div>
       </div>
+      
     </section>
+
     <div v-if="showJsonModal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/80 backdrop-blur-sm p-4 sm:p-6" @click.self="showJsonModal = false">
       <div class="bg-gray-900 border border-gray-700 rounded-xl shadow-2xl w-full max-w-4xl flex flex-col max-h-[85vh] overflow-hidden transform transition-all">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-800 bg-gray-900/50">
@@ -114,6 +161,11 @@ const isSending = ref(false)
 const chatContainer = ref<HTMLElement | null>(null)
 let eventSource: EventSource | null = null
 
+// 文件上传相关响应式变量
+const fileInputRef = ref<HTMLInputElement | null>(null)
+const isUploading = ref(false)
+const attachedFile = ref<{ name: string, path: string } | null>(null)
+
 const scrollToBottom = async () => {
   await nextTick()
   if (chatContainer.value) {
@@ -131,9 +183,7 @@ const fetchSessions = async () => {
   sessions.value = await res.json()
   
   if (sessions.value.length > 0 && !activeSessionId.value) {
-    // 【修复报错】先安全地取出第一个元素
     const firstSession = sessions.value[0]
-    // 明确判断它存在后，再读取它的 id
     if (firstSession) {
       selectSession(firstSession.id)
     }
@@ -156,7 +206,7 @@ const createNewSession = async () => {
 
 const deleteSession = async (id: string) => {
   await fetch('http://localhost:8000/api/sessions/' + id, { method: 'DELETE' })
-  activeSessionId.value = '' // 清空选中状态，强制重新拉取
+  activeSessionId.value = '' 
   await fetchSessions()
 }
 
@@ -172,7 +222,6 @@ const connectSSE = () => {
       const data = JSON.parse(event.data)
       if (data.type === 'connection') return
       
-      // 【关键防御】防止后台流式消息串台到其他会话界面
       if (data.session_id && data.session_id !== activeSessionId.value) return
 
       const existingMsgIndex = messages.value.findIndex(m => m.id === data.id)
@@ -182,10 +231,8 @@ const connectSSE = () => {
         messages.value.push(data)
       }
       
-      
       if (data.type === 'answer' || data.type === 'error') {
         isSending.value = false
-        // 对话结束后刷新侧边栏，更新标题
         fetchSessions() 
       }
     } catch (e) { console.error(e) }
@@ -193,26 +240,34 @@ const connectSSE = () => {
 }
 
 const sendMessage = async () => {
-  const text = userInput.value.trim()
+  let text = userInput.value.trim()
+  
+  // 拦截：只要没有输入文字，或者正在发送中，就直接阻止发送（哪怕有附件也不行）
   if (!text || isSending.value) return
 
-  // 前端立刻上屏
+  // 拼接出真正发给后端的暗文 (包含绝对路径)
+  const fullMessageForBackend = attachedFile.value 
+    ? `[本地文件路径: ${attachedFile.value.path}]\n${text}` 
+    : text;
+
+  // 上屏 (前端消息列表存的是完整的，依赖 formatUserMessage 过滤展示)
   messages.value.push({
     id: Date.now().toString(),
     role: 'user',
     type: 'answer',
-    content: text,
+    content: fullMessageForBackend,
     timestamp: Date.now()
   })
+  
   userInput.value = ''
+  attachedFile.value = null // 发送后清空附件栏
   isSending.value = true
 
-  // 附带 session_id 发送给后端
   try {
     await fetch('http://localhost:8000/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: text, session_id: activeSessionId.value })
+      body: JSON.stringify({ message: fullMessageForBackend, session_id: activeSessionId.value })
     })
   } catch (error) {
     messages.value.push({ id: Date.now().toString(), role: 'assistant', type: 'error', content: "网络请求失败" })
@@ -220,25 +275,70 @@ const sendMessage = async () => {
   }
 }
 
-// --- JSON 预览模态框逻辑 ---
+// ==============================
+// 3. 文件上传逻辑
+// ==============================
+const triggerUpload = () => {
+  fileInputRef.value?.click()
+}
+
+const removeAttachment = () => {
+  attachedFile.value = null
+}
+
+// 过滤函数：清洗大模型历史记录里的丑陋绝对路径，只在 UI 展示带图标的附件名
+const formatUserMessage = (content: string) => {
+  if (!content) return ''
+  return content.replace(/\[本地文件路径:\s*(?:.*?[\/\\])?([^\/\\\]]+)\]/g, '📎 $1')
+}
+
+const handleFileUpload = async (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (!file) return
+
+  isUploading.value = true
+  const formData = new FormData()
+  formData.append('file', file)
+
+  try {
+    const response = await fetch('http://localhost:8000/api/upload', {
+      method: 'POST',
+      body: formData,
+    })
+    const data = await response.json()
+    if (data.success) {
+      attachedFile.value = { name: file.name, path: data.file_path }
+    } else {
+      alert(`上传失败: ${data.error}`)
+    }
+  } catch (error) {
+    console.error('上传出错:', error)
+    alert('上传请求失败，请确保后端服务正常运行。')
+  } finally {
+    isUploading.value = false
+    if (fileInputRef.value) fileInputRef.value.value = ''
+  }
+}
+
+// ==============================
+// 4. JSON 预览模态框逻辑
+// ==============================
 const showJsonModal = ref(false)
-const jsonPreviewHtml = ref('') // 注意：这里改名为了 Html
+const jsonPreviewHtml = ref('')
 
 const openJsonPreview = async (url: string) => {
   try {
     const res = await fetch(url)
     const data = await res.json()
     
-    // 1. 先转成带缩进的字符串
     const jsonString = JSON.stringify(data, null, 2)
     
-    // 2. 将字符串中的 HTML 特殊字符转义（防止 XSS 攻击或数据中有 < > 导致渲染错乱）
     let safeHtml = jsonString
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       
-    // 3. 正则匹配：识别所有的 http/https 链接，并用 <a> 标签包裹起来
     const urlRegex = /(https?:\/\/[^\s",]+)/g
     safeHtml = safeHtml.replace(urlRegex, '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:text-blue-300 underline font-bold transition-colors">$1</a>')
     

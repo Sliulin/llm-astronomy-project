@@ -241,7 +241,7 @@ def get_spectra(object_name: str, max_spectra: int = 5) -> Dict[str, Any]:
     except Exception as e:
         return {"error": str(e), "StatusCode": -1}
 get_spectra.title = "获取天体光谱"
-get_spectra.icon = "🔍"
+get_spectra.icon = "🌈"
 
 @tool(description="直接执行标准 ADQL 语句，对 Gaia 星表进行高阶自定义查询")
 def query_adql(query: str) -> Dict[str, Any]:
@@ -256,24 +256,67 @@ def query_adql(query: str) -> Dict[str, Any]:
         job = Gaia.launch_job_async(query)
         result_table = job.get_results()
         
-        important_fields = ['source_id', 'designation', 'ra', 'dec', 'parallax', 'phot_g_mean_mag']
-        full_results = []
+        # ==========================================
+        # 1. 提取并清理【完整】数据，用于本地落盘
+        # ==========================================
+        all_raw_results = []
         for row in result_table:
-            row_dict = {col: row[col] for col in result_table.colnames if col in important_fields}
-            full_results.append(row_dict)
+            row_dict = {}
+            for col in result_table.colnames:
+                val = row[col]
+                # 处理 Astropy 返回的特殊数据类型，防止 JSON 序列化报错
+                if np.ma.is_masked(val):
+                    row_dict[col] = None
+                elif isinstance(val, (np.floating, float)):
+                    row_dict[col] = round(float(val), 5) if not np.isnan(val) else None
+                elif isinstance(val, (np.integer, int)):
+                    row_dict[col] = int(val)
+                elif isinstance(val, bytes):
+                    row_dict[col] = val.decode('utf-8')
+                else:
+                    row_dict[col] = str(val)
+            all_raw_results.append(row_dict)
         
-        results = full_results[:10] if len(full_results) > 10 else full_results
+        # 保存完整数据到本地（包含所有的行、所有的列）
+        save_result = {
+            "message": f"ADQL查询成功，找到 {len(result_table)} 条记录",
+            "count": len(result_table),
+            "columns": result_table.colnames,
+            "results": all_raw_results
+        }
+        saved_path = _save_result("执行ADQL查询", save_result)
+        
+        # ==========================================
+        # 2. 提取【精简】数据，用于发给大模型
+        # ==========================================
+        important_fields = [
+            'source_id', 'designation', 'ra', 'dec', 'parallax', 
+            'phot_g_mean_mag', 'bp_rp', 'phot_bp_mean_mag', 'phot_rp_mean_mag'
+        ]
+        
+        # 只保留 important_fields 中实际存在的列
         filtered_columns = [col for col in result_table.colnames if col in important_fields]
         
-        result = {"message": f"ADQL查询成功，找到 {len(result_table)} 条记录", "count": len(result_table), "results": results, "columns": filtered_columns}
-        save_result = {"message": f"ADQL查询成功，找到 {len(result_table)} 条记录", "count": len(result_table), "results": full_results, "columns": filtered_columns}
+        # 只取前 5 行！
+        preview_results = []
+        for row in all_raw_results[:5]:
+            preview_row = {col: row[col] for col in filtered_columns}
+            preview_results.append(preview_row)
         
-        result["saved_path"] = _save_result("执行ADQL查询", save_result)
+        # 返回给大模型的最终结果
+        result = {
+            "message": f"ADQL查询成功，总共找到 {len(result_table)} 条记录。为节省上下文，此处仅展示前 {len(preview_results)} 条及部分核心列。",
+            "count": len(result_table),
+            "columns": filtered_columns,
+            "results": preview_results,
+            "saved_path": saved_path  # 这个路径会被 core.py 的隐身拦截器捕获转为前端下载链接
+        }
         return result
+        
     except Exception as e:
-        result = {"error": str(e), "status": "error"}
-        result["saved_path"] = _save_result("执行ADQL查询", result)
-        return result
+        error_result = {"error": str(e), "status": "error"}
+        error_result["saved_path"] = _save_result("执行ADQL查询", error_result)
+        return error_result
 query_adql.title = "执行ADQL查询"
 query_adql.icon = "🔍"
 
