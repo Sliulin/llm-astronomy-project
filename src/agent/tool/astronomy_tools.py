@@ -5,8 +5,14 @@ from tracemalloc import get_object_traceback
 from typing import Dict, Any, List
 from astroquery.ipac.ned import Ned
 from astroquery.vizier import Vizier
+
+import numpy as np
+from astropy.time import Time
+from astropy.coordinates import SkyCoord 
 import astropy.units as u
-from astropy.coordinates import SkyCoord
+
+from astroquery.jplhorizons import Horizons
+from astroquery.xmatch import XMatch
 
 # 引入基座的魔法装饰器
 from src.agent.tool.base import tool
@@ -132,6 +138,9 @@ def get_astronomy_object(object_name: str) -> Dict[str, Any]:
         return info
     except Exception as e:
         return _get_astronomy_object_vizier(object_name)
+get_astronomy_object.title = "天文对象查询"
+get_astronomy_object.icon = " 🔍"
+
 
 @tool(description="锥形搜索：按名称查询以目标为中心，指定半径内的周边天文对象集合")
 def query_region_by_name(object_name: str, radius: float = 0.01) -> Dict[str, Any]:
@@ -154,6 +163,10 @@ def query_region_by_name(object_name: str, radius: float = 0.01) -> Dict[str, An
         result = _query_region_by_name_vizier(object_name, radius)
         result["saved_path"] = _save_result("按名称查询区域", result)
         return result
+query_region_by_name.title = "按名称查询区域"
+query_region_by_name.icon = "🔍"
+
+
 
 @tool(description="按绝对赤道坐标(RA, Dec)查询区域内的天文对象集合")
 def query_region_by_coordinates(ra: float, dec: float, radius: float = 0.01) -> Dict[str, Any]:
@@ -178,6 +191,10 @@ def query_region_by_coordinates(ra: float, dec: float, radius: float = 0.01) -> 
         result = _query_region_by_coordinates_vizier(ra, dec, radius)
         result["saved_path"] = _save_result("按坐标查询区域", result)
         return result
+query_region_by_coordinates.title = "按坐标查询区域"
+query_region_by_coordinates.icon = "🔍"
+
+
 
 @tool(description="获取指定天文对象的深空图像下载链接 (FITS/GZ格式)")
 def get_images(object_name: str, max_images: int = 5) -> Dict[str, Any]:
@@ -199,6 +216,9 @@ def get_images(object_name: str, max_images: int = 5) -> Dict[str, Any]:
         return result
     except Exception as e:
         return {"error": str(e), "StatusCode": -1}
+get_images.title = "获取天体图像"
+get_images.icon = "🖼️"
+
 
 @tool(description="获取指定天文对象的一维光谱数据链接")
 def get_spectra(object_name: str, max_spectra: int = 5) -> Dict[str, Any]:
@@ -220,6 +240,8 @@ def get_spectra(object_name: str, max_spectra: int = 5) -> Dict[str, Any]:
         return result
     except Exception as e:
         return {"error": str(e), "StatusCode": -1}
+get_spectra.title = "获取天体光谱"
+get_spectra.icon = "🔍"
 
 @tool(description="直接执行标准 ADQL 语句，对 Gaia 星表进行高阶自定义查询")
 def query_adql(query: str) -> Dict[str, Any]:
@@ -252,6 +274,173 @@ def query_adql(query: str) -> Dict[str, Any]:
         result = {"error": str(e), "status": "error"}
         result["saved_path"] = _save_result("执行ADQL查询", result)
         return result
+query_adql.title = "执行ADQL查询"
+query_adql.icon = "🔍"
+
+# ==========================================
+# 太阳系天体星历表工具
+# ==========================================
+@tool(description="查询太阳系内天体（如行星、矮行星、彗星）的星历表，获取其当前的赤经、赤纬、地月距离和视星等。")
+def get_ephemeris(target_name: str) -> Dict[str, Any]:
+    """
+    查询太阳系天体的实时星历表数据。
+    Args:
+        target_name (str): 太阳系天体名称，如 'Mars', '火星', 'Halley'。
+    """
+    
+    # 【修复】：JPL Horizons 极其严格，我们做一个智能字典，把常见的名字自动转成 JPL 官方 ID
+    mapping = {
+        "mars": "499", "火星": "499",
+        "jupiter": "599", "木星": "599",
+        "saturn": "699", "土星": "699",
+        "venus": "299", "金星": "299",
+        "mercury": "199", "水星": "199",
+        "uranus": "799", "天王星": "799",
+        "neptune": "899", "海王星": "899",
+        "pluto": "999", "冥王星": "999",
+        "moon": "301", "月球": "301",
+        "sun": "10", "太阳": "10"
+    }
+    
+    # 转换 ID，如果没有匹配到（比如查哈雷彗星），就用大模型传进来的原值去碰碰运气
+    search_id = mapping.get(target_name.lower().strip(), target_name)
+    
+    try:
+        now = Time.now()
+        obj = Horizons(id=search_id, location='500', epochs=now.jd)
+        eph = obj.ephemerides()
+        
+        if len(eph) == 0:
+            return {"status": "error", "error": f"未查询到 {target_name} 的数据。"}
+            
+        result = {
+            "target_name": str(eph['targetname'][0]),
+            "datetime_utc": str(eph['datetime_str'][0]),
+            "ra": round(float(eph['RA'][0]), 5),
+            "dec": round(float(eph['DEC'][0]), 5),
+            "distance_earth_au": round(float(eph['delta'][0]), 4),
+            "distance_sun_au": round(float(eph['r'][0]), 4) if 'r' in eph.columns else None,
+            "visual_magnitude": round(float(eph['V'][0]), 2) if 'V' in eph.columns else "N/A"
+        }
+        return {"status": "success", "data": result}
+        
+    except Exception as e:
+        return {"status": "error", "error": f"星历查询失败，可能天体名称存在歧义或无法识别。错误详情: {str(e)}"}
+get_ephemeris.title = "太阳系星历查询"
+get_ephemeris.icon = "🪐"
+
+# ==========================================
+# 空间多波段：星表交叉证认 (Cross-Matching)
+# ==========================================
+@tool(description="在指定天区内对两大天文星表进行交叉匹配（Cross-Match），寻找同一天体在不同波段（如光学和红外）的数据。")
+def cross_match_catalogs(ra: float, dec: float, radius_arcmin: float, base_catalog: str, target_catalog: str) -> Dict[str, Any]:
+    """
+    跨星表交叉证认工具。
+    Args:
+        ra (float): 中心点赤经 (度)
+        dec (float): 中心点赤纬 (度)
+        radius_arcmin (float): 搜索半径 (角分)，必须小于等于 5.0
+        base_catalog (str): 基础星表，支持 'gaia' (光学), '2mass' (近红外), 'wise' (中红外)
+        target_catalog (str): 目标匹配星表，支持 'gaia', '2mass', 'wise'
+    """
+
+    radius_arcmin = min(float(radius_arcmin), 5.0)
+    
+    cat_map = {
+        "gaia": "I/355/gaiadr3",   
+        "2mass": "II/246/out",     
+        "wise": "II/328/allwise",  
+        "sdss": "V/147/sdss12"     
+    }
+    
+    cat1_vizier = cat_map.get(base_catalog.lower())
+    cat2_vizier = cat_map.get(target_catalog.lower())
+    
+    if not cat1_vizier or not cat2_vizier:
+        return {"status": "error", "error": f"暂不支持所选星表。目前支持: {list(cat_map.keys())}"}
+        
+    try:
+        coord = SkyCoord(ra=ra, dec=dec, unit=(u.deg, u.deg), frame='icrs')
+        # 【修改1】：解开 Vizier 的行数封印（设为 5000 足以应对 5 角分内的大部分星区，又不会内存溢出）
+        v = Vizier(columns=["**"], row_limit=5000) 
+        tables = v.query_region(coord, radius=radius_arcmin * u.arcmin, catalog=cat1_vizier)
+        
+        if len(tables) == 0:
+            return {"status": "error", "error": f"在基础星表 {base_catalog} 中该区域未发现天体。"}
+            
+        base_table = tables[0]
+        
+        ra_col, dec_col = 'ra', 'dec'
+        for col in base_table.colnames:
+            col_up = col.upper()
+            if col_up in ['RA', 'RAJ2000', 'RA_ICRS']: ra_col = col
+            if col_up in ['DEC', 'DEJ2000', 'DE_ICRS']: dec_col = col
+            
+        xmatched_table = XMatch.query(
+            cat1=base_table, 
+            cat2=f"vizier:{cat2_vizier}", 
+            max_distance=3 * u.arcsec,
+            colRA1=ra_col,      
+            colDec1=dec_col     
+        )
+        
+        if len(xmatched_table) == 0:
+            return {
+                "status": "success", 
+                "message": f"找到了 {len(base_table)} 个 {base_catalog} 目标，但在 3 角秒误差内没有找到 {target_catalog} 的匹配数据。"
+            }
+            
+        # 【修改2】：遍历所有匹配结果，而不是仅仅前 10 条
+        full_results = []
+        for row in xmatched_table:
+            row_dict = {}
+            for col in xmatched_table.colnames:
+                val = row[col]
+                if np.ma.is_masked(val):
+                    row_dict[col] = None
+                elif isinstance(val, (np.floating, float)):
+                    row_dict[col] = round(float(val), 4) if not np.isnan(val) else None
+                elif isinstance(val, (np.integer, int)):
+                    row_dict[col] = int(val)
+                elif isinstance(val, bytes):
+                    row_dict[col] = val.decode('utf-8')
+                else:
+                    row_dict[col] = str(val)
+            full_results.append(row_dict)
+            
+        # 【修改3】：组装供本地保存的完整数据包
+        save_data = {
+            "status": "success", 
+            "message": f"成功完成交叉证认！在 {radius_arcmin} 角分内，找到 {len(full_results)} 个匹配天体。",
+            "matched_count": len(full_results),
+            "data": full_results
+        }
+        
+        # 将完整数据落盘，与原有工具逻辑保持一致
+        saved_path = _save_result("交叉匹配", save_data)
+        
+        #组装仅返回给大模型的精简数据包（只给前 5 条）
+        preview_results = []
+        for row in full_results[:5]:
+            preview_row = {k: row[k] for k in list(row.keys())[:5]}
+            preview_results.append(preview_row)
+
+        return {
+            "status": "success", 
+            "message": (
+                f"成功完成交叉证认！在 {radius_arcmin} 角分内，共找到 {len(full_results)} 个匹配天体。"
+            ),
+            "matched_count": len(full_results),
+            "data": preview_results, 
+            "saved_path": saved_path
+        }
+
+    except Exception as e:
+        error_result = {"status": "error", "error": f"交叉证认失败: {str(e)}"}
+        error_result["saved_path"] = _save_result("交叉匹配", error_result)
+        return error_result
+cross_match_catalogs.title = "跨星表交叉证认工具"
+cross_match_catalogs.icon = "🔍"
 
 if __name__ == "__main__":
     get_astronomy_object("M31")

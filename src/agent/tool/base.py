@@ -75,13 +75,15 @@ class ToolRegistry:
         print(f"🔧 自动注册工具成功: [{category}] {name}")
 
     def get_frontend_tools(self) -> List[Dict[str, Any]]:
-        """【新增】：专门为前端生成的工具列表，包含分类信息，去除无法被 JSON 序列化的 func"""
+        """专门为前端生成的工具列表，动态提取函数对象上的元数据"""
         return [
             {
                 "name": info["name"],
                 "description": info["description"],
                 "parameters": info["parameters"],
-                "category": info.get("category", "其他工具")
+                "category": info["category"],  # 直接用字典里已经存好的完美分类
+                "title": getattr(info["func"], 'title', info["name"]),
+                "icon": getattr(info["func"], 'icon', '🔧')
             }
             for info in self.tools.values()
         ]

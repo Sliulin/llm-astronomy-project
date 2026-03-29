@@ -17,6 +17,8 @@ def calculate_average(numbers: List[float]) -> Dict[str, Any]:
         "result": avg,
         "message": f"计算完成，这组数据的平均值为 {avg:.4f}"
     }
+calculate_average.title = "平均值计算"
+calculate_average.icon = " 🔧"
 
 @tool(description="计算赤经或赤纬数据的最大值与最小值差异 (极差)")
 def calculate_range(numbers: List[float]) -> Dict[str, Any]:
@@ -34,3 +36,5 @@ def calculate_range(numbers: List[float]) -> Dict[str, Any]:
         "result": data_range,
         "message": f"数据的极差为 {data_range:.4f}"
     }
+calculate_range.title = "极差计算"
+calculate_range.icon = " 🔧"

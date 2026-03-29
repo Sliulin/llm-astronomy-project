@@ -101,13 +101,14 @@ async def query(question: str, session_id: str = "default", max_turns: int = 5, 
                 if on_output:
                     await on_output({
                         "id": str(uuid.uuid4()), "type": "action", 
-                        "content": f"正在查询天文数据库：{func_name}({func_args})", 
+                        "content": f"正在调用工具：{func_name}({func_args})", 
                         "is_append": False, "session_id": session_id
                     })
+
+                await asyncio.sleep(0.01)
                 
                 # 执行本地天文工具
-                observation = tool_registry.execute_tool(func_name, **func_args)
-                
+                observation = await asyncio.to_thread(tool_registry.execute_tool, func_name, **func_args)
                 # ==========================================
                 # 【核心拦截逻辑】：提取路径并对大模型隐身
                 # ==========================================

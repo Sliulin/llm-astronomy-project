@@ -104,45 +104,35 @@ const renderedContent = computed(() => {
 
 /* 表格样式美化 */
 .markdown-renderer table {
-  display: table;
-  width: 100%;
+  display: block;       /* 让表格变成块级元素，从而支持独立滚动 */
+  max-width: 100%;      /* 最大宽度绝对不超过外层聊天气泡 */
+  width: max-content;   /* 核心魔法：宽度完全由内部数据撑开，自适应！ */
+  overflow-x: auto;     /* 只有当撑开的宽度大于 100% 时，才出现横向滚动条 */
+  
   table-layout: auto;
   border-collapse: separate;
   border-spacing: 0;
   margin: 1.25rem 0;
   border: 1px solid #374151;
   border-radius: 8px;
-  overflow: hidden;
 }
 
+/* 单元格自适应撑开 */
 .markdown-renderer th,
 .markdown-renderer td {
-  padding: 0.75rem;
+  padding: 0.75rem 1.25rem; /* 稍微增加一点左右内边距，让自适应后的数据不拥挤 */
   border-bottom: 1px solid #374151;
   text-align: center;
   vertical-align: middle;
+  white-space: nowrap; /* 核心魔法：强制所有列都不换行，原汁原味展示天文长数字 */
 }
 
-.markdown-renderer th:first-child,
-.markdown-renderer td:first-child {
-  width: 100px; 
-  word-break: break-word; 
-}
-
-.markdown-renderer th {
-  background-color: #1f2937;
-  color: #f3f4f6;
-  font-weight: 600;
-}
-
-.markdown-renderer td {
-  color: #d1d5db;
-}
-
+/* 修复底部最后一行的双重边框问题 */
 .markdown-renderer tr:last-child td {
   border-bottom: none;
 }
 
+/* 斑马纹背景 */
 .markdown-renderer tr:nth-child(even) td {
   background-color: rgba(55, 65, 81, 0.3);
 }
