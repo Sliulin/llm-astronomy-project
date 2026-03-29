@@ -53,7 +53,7 @@
                 {{ msg.content }}
               </div>
               <div v-else-if="msg.type === 'answer'" class="w-full">
-                <MarkdownViewer :content="msg.content" />
+                <MarkdownViewer :content="msg.content" @preview-json="openJsonPreview"/>
               </div>
             </div>
           </div>
@@ -80,6 +80,22 @@
         </div>
       </div>
     </section>
+    <div v-if="showJsonModal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/80 backdrop-blur-sm p-4 sm:p-6" @click.self="showJsonModal = false">
+      <div class="bg-gray-900 border border-gray-700 rounded-xl shadow-2xl w-full max-w-4xl flex flex-col max-h-[85vh] overflow-hidden transform transition-all">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-800 bg-gray-900/50">
+          <h3 class="text-gray-200 font-bold flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
+            天文数据原始视图
+          </h3>
+          <button @click="showJsonModal = false" class="text-gray-500 hover:text-red-400 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+        <div class="p-6 overflow-y-auto bg-gray-950 flex-1 custom-scrollbar">
+          <pre class="text-green-400 font-mono text-sm leading-relaxed whitespace-pre-wrap break-all" v-html="jsonPreviewHtml"></pre>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -201,6 +217,36 @@ const sendMessage = async () => {
   } catch (error) {
     messages.value.push({ id: Date.now().toString(), role: 'assistant', type: 'error', content: "网络请求失败" })
     isSending.value = false
+  }
+}
+
+// --- JSON 预览模态框逻辑 ---
+const showJsonModal = ref(false)
+const jsonPreviewHtml = ref('') // 注意：这里改名为了 Html
+
+const openJsonPreview = async (url: string) => {
+  try {
+    const res = await fetch(url)
+    const data = await res.json()
+    
+    // 1. 先转成带缩进的字符串
+    const jsonString = JSON.stringify(data, null, 2)
+    
+    // 2. 将字符串中的 HTML 特殊字符转义（防止 XSS 攻击或数据中有 < > 导致渲染错乱）
+    let safeHtml = jsonString
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      
+    // 3. 正则匹配：识别所有的 http/https 链接，并用 <a> 标签包裹起来
+    const urlRegex = /(https?:\/\/[^\s",]+)/g
+    safeHtml = safeHtml.replace(urlRegex, '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:text-blue-300 underline font-bold transition-colors">$1</a>')
+    
+    jsonPreviewHtml.value = safeHtml
+    showJsonModal.value = true
+  } catch (error) {
+    console.error('获取JSON数据失败:', error)
+    window.open(url, '_blank')
   }
 }
 

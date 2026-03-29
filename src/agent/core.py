@@ -3,14 +3,15 @@ import sys
 import json
 import uuid
 import asyncio
+from dotenv import load_dotenv
+from openai import AsyncOpenAI
+from src.agent.tool import tool_registry
 
 # 添加项目根目录到Python路径
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, BASE_DIR)
 
-from dotenv import load_dotenv
-from openai import AsyncOpenAI
-from src.agent.tools import tool_registry
+
 
 # 加载环境变量
 env_path = os.path.join(BASE_DIR, "assets", "openai.env")
@@ -119,13 +120,11 @@ async def query(question: str, session_id: str = "default", max_turns: int = 5, 
                                 rel_path = normalized.split('/download/')[-1]
                                 url = f"http://localhost:8000/downloads/{rel_path}"
                                 # 把生成的前端 URL 存到我们自己的列表里
-                                bypassed_links.append(f"\n\n📥 **[点击查看/下载完整原始数据 ({k})]({url})**")
-                                # 标记这个包含本地路径的键，准备删掉
+                                bypassed_links.append(f"\n\n**[原始数据已下载到downloads目录<br><span style='margin-left: 1.2em;'>点击查看原始数据 ({k})</span>]({url})**")
                                 keys_to_delete.append(k) 
                             elif isinstance(v, (dict, list)):
                                 extract_and_hide_paths(v)
                                 
-                        # 【对大模型隐身】从传给大模型的数据中删掉这个路径，它就看不见了！
                         for k in keys_to_delete:
                             del obj[k]
                     elif isinstance(obj, list):

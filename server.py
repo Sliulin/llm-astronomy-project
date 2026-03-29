@@ -10,7 +10,7 @@ import os
 import uuid
 
 from src.agent.core import query
-from src.agent.tools import tool_registry
+from src.agent.tool import tool_registry
 
 # ==========================================
 # 多会话持久化管理
@@ -104,32 +104,8 @@ async def delete_session(session_id: str):
 
 @app.get("/api/tools")
 async def get_tools_list():
-    """动态获取后端注册的所有工具 (供前端工具箱展示)"""
-    openai_tools = tool_registry.get_openai_tools()
-    formatted_tools = []
-    
-    for tool in openai_tools:
-        func = tool["function"]
-        # 将 JSON Schema 格式的参数，转化为漂亮的前端展示字符串
-        props = func.get("parameters", {}).get("properties", {})
-        if not props:
-            param_str = "{\n  // 无需参数\n}"
-        else:
-            param_str = "{\n"
-            for k, v in props.items():
-                desc = v.get("description", "")
-                # 把描述信息缩短一点，防止前端换行太丑
-                short_desc = desc.split("。")[0] if desc else "" 
-                param_str += f'  "{k}": "{v.get("type", "string")}" // {short_desc}\n'
-            param_str += "}"
-            
-        formatted_tools.append({
-            "name": func["name"],
-            "description": func["description"],
-            "params": param_str
-        })
-        
-    return formatted_tools
+    """动态获取后端注册的所有工具 (包含分类信息，供前端工具箱展示)"""
+    return tool_registry.get_frontend_tools()
     
 # ==========================================
 # 对话核心 API
@@ -159,7 +135,6 @@ async def chat_endpoint(request: Request):
         if not message or session_id not in sessions_data:
             return {"error": "Invalid request"}
         
-        # 【修复 BUG】明确将用户的提问写入当前会话中！
         user_msg = {
             "id": str(uuid.uuid4()),
             "type": "answer",

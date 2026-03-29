@@ -2,6 +2,7 @@
   <div 
     class="markdown-renderer text-gray-200 leading-relaxed max-w-none" 
     v-html="renderedContent"
+    @click="handleLinkClick"
   ></div>
 </template>
 
@@ -15,6 +16,25 @@ const props = defineProps<{
   content: string
 }>()
 
+// ==========================================
+// 【新增逻辑】：定义 emit 事件并拦截点击
+// ==========================================
+const emit = defineEmits<{
+  (e: 'preview-json', url: string): void
+}>()
+
+const handleLinkClick = (e: MouseEvent) => {
+  const target = e.target as HTMLElement
+  const aTag = target.closest('a')
+  
+  // 如果点击的是本地的 json 下载链接，拦截它！
+  if (aTag && aTag.href.includes('/downloads/') && aTag.href.endsWith('.json')) {
+    e.preventDefault() // 阻止浏览器打开新标签页
+    emit('preview-json', aTag.href) // 通知父组件打开弹窗
+  }
+}
+// ==========================================
+
 // 初始化 Markdown 解析器
 const md = new MarkdownIt({
   html: true,
@@ -23,16 +43,32 @@ const md = new MarkdownIt({
   typographer: true
 }).use(markdownItKatex)
 
+// 拦截并重写 <a> 标签，强制在新标签页打开 (TypeScript 安全版)
+const defaultRender = md.renderer.rules.link_open
+
+md.renderer.rules.link_open = function (tokens, idx, options, env, self) {
+  const token = tokens[idx]
+  
+  if (token) {
+    token.attrSet('target', '_blank')
+    token.attrSet('rel', 'noopener noreferrer')
+  }
+  
+  if (defaultRender) {
+    return defaultRender(tokens, idx, options, env, self)
+  } else {
+    return self.renderToken(tokens, idx, options)
+  }
+}
+
 // 渲染前预处理：防止大模型吐出原始 Python 字典导致的渲染失败
 const preprocessContent = (text: string) => {
   if (!text) return ''
   
-  // 如果内容看起来像原始 JSON/字典（比如包含 {'links': ...}），给它包裹代码块，防止乱码
   if (text.trim().startsWith('{') && text.includes("'links'")) {
     return '```json\n' + text + '\n```'
   }
   
-  // 修复常见的 Markdown 链接空格错误：将 "[描述] (http)" 替换为 "[描述](http)"
   return text.replace(/\[([^\]]+)\]\s+\((https?:\/\/[^\s)]+)\)/g, '[$1]($2)')
 }
 
@@ -45,8 +81,8 @@ const renderedContent = computed(() => {
 <style>
 /* 核心：解决链接不可见问题 */
 .markdown-renderer a {
-  color: #60a5fa !important; /* 强制亮蓝色 */
-  text-decoration: underline !important; /* 强制下划线 */
+  color: #60a5fa !important;
+  text-decoration: underline !important;
   font-weight: 600;
   transition: color 0.2s;
   word-break: break-all;
@@ -59,13 +95,14 @@ const renderedContent = computed(() => {
 
 /* 针对 FITS/GZ 下载链接增加小图标提示 */
 .markdown-renderer a[href$=".gz"]::before,
-.markdown-renderer a[href$=".fits"]::before {
+.markdown-renderer a[href$=".fits"]::before,
+.markdown-renderer a[href*="/downloads/"]::before {
   content: "📥 ";
   text-decoration: none;
   display: inline-block;
 }
 
-/* 表格样式美化 - 适配天文星表数据 */
+/* 表格样式美化 */
 .markdown-renderer table {
   display: table;
   width: 100%;
@@ -78,21 +115,17 @@ const renderedContent = computed(() => {
   overflow: hidden;
 }
 
-/* 将所有表头和单元格内容居中 */
 .markdown-renderer th,
 .markdown-renderer td {
   padding: 0.75rem;
   border-bottom: 1px solid #374151;
-  text-align: center; /* 核心修改：全局居中 */
+  text-align: center;
   vertical-align: middle;
 }
 
-/* 核心修改：智能控制第一列（通常是编号或名称）的宽度 */
 .markdown-renderer th:first-child,
 .markdown-renderer td:first-child {
-  /* 基础宽度设为 80px (约 4-5 个中文字符的宽度) */
   width: 100px; 
-  /* 保证内容过长时不会被强制截断，而是自然撑开或换行 */
   word-break: break-word; 
 }
 
@@ -106,17 +139,14 @@ const renderedContent = computed(() => {
   color: #d1d5db;
 }
 
-/* 修复底部最后一行的双重边框问题 */
 .markdown-renderer tr:last-child td {
   border-bottom: none;
 }
 
-/* 斑马纹背景 */
 .markdown-renderer tr:nth-child(even) td {
   background-color: rgba(55, 65, 81, 0.3);
 }
 
-/* 物理公式样式微调 */
 .katex-display {
   margin: 1rem 0;
   padding: 0.5rem;
@@ -125,7 +155,6 @@ const renderedContent = computed(() => {
   overflow-x: auto;
 }
 
-/* 段落间距 */
 .markdown-renderer p {
   margin-bottom: 1rem;
 }

@@ -1,126 +1,159 @@
 <template>
-  <div class="flex-1 overflow-y-auto bg-gray-950 text-gray-100 p-6 md:p-10 relative">
-    <div class="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/5 rounded-full blur-[100px] pointer-events-none"></div>
-    
-    <div class="max-w-7xl mx-auto relative z-10">
-      <div class="mb-12">
-        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm mb-4">
-          <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-          Registry Status: Online
-        </div>
-        <h1 class="text-4xl font-extrabold tracking-tight mb-4">工具库 <span class="text-gray-500 font-light">/ Tools Registry</span></h1>
-        <p class="text-lg text-gray-400 max-w-3xl leading-relaxed">
-          AstroAgent 在后台可以自主调用的所有天文 API 接口。当您在观测台中输入自然语言指令时，大语言模型会自动从下方工具库中选择合适的工具进行数据检索。
-        </p>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div class="mb-10">
+        <h1 class="text-3xl font-bold text-white flex items-center gap-3">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" /></svg>
+          系统工具箱
+        </h1>
+        <p class="mt-2 text-gray-400">以下是 AstroAgent 当前支持的所有可用工具，大模型会根据您的需求自动调用它们。</p>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div 
-          v-for="tool in tools" 
-          :key="tool.name" 
-          class="bg-gray-900 border border-gray-800 rounded-2xl p-6 hover:-translate-y-1 hover:border-blue-500/50 hover:shadow-[0_10px_30px_-15px_rgba(59,130,246,0.3)] transition-all duration-300 group flex flex-col"
-        >
-          <div class="flex justify-between items-start mb-5">
-            <div class="flex items-center gap-4">
-              <div class="w-12 h-12 rounded-xl bg-gray-800 flex items-center justify-center text-blue-400 group-hover:scale-110 transition-transform group-hover:bg-blue-500/10">
-                <span v-html="tool.icon"></span>
+      <div v-if="isLoading" class="flex justify-center items-center py-20">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
+
+      <div v-else>
+        <div v-for="(toolList, categoryName) in groupedTools" :key="categoryName" class="mb-12">
+          
+          <div class="flex items-center gap-3 mb-6 border-b border-gray-800 pb-3">
+            <span class="w-1.5 h-6 bg-blue-500 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.6)]"></span>
+            <h2 class="text-2xl font-bold text-gray-200 tracking-wide">{{ categoryName }}</h2>
+            <span class="px-2.5 py-0.5 rounded-full bg-gray-800 text-gray-400 text-sm font-medium border border-gray-700 ml-2">
+              {{ toolList.length }} 个工具
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div v-for="tool in toolList" :key="tool.name" 
+                 class="bg-gray-900 border border-gray-800 rounded-xl p-6 hover:border-blue-500/50 hover:shadow-[0_0_20px_rgba(59,130,246,0.15)] transition-all duration-300 group flex flex-col">
+              
+              <div class="flex items-start gap-4 mb-4">
+                <div class="p-3 bg-gray-800 rounded-lg group-hover:bg-blue-900/30 transition-colors">
+                  <span class="text-2xl">{{ tool.icon || '🔧' }}</span>
+                </div>
+                <div>
+                  <h3 class="text-lg font-bold text-white mb-1">{{ tool.title || tool.name }}</h3>
+                  <code class="text-xs text-blue-400 bg-blue-900/20 px-2 py-1 rounded">{{ tool.name }}</code>
+                </div>
               </div>
-              <div>
-                <h3 class="text-lg font-bold text-gray-200 group-hover:text-blue-400 transition-colors">{{ tool.name }}</h3>
-                <span class="text-xs font-medium px-2 py-0.5 rounded-md bg-gray-800 text-gray-400 border border-gray-700">
-                  {{ tool.category }}
-                </span>
+              
+              <p class="text-gray-400 text-sm leading-relaxed mb-4 flex-1">
+                {{ tool.description }}
+              </p>
+              
+              <div class="bg-gray-950 rounded-lg p-3 border border-gray-800 mt-auto">
+                <div class="text-xs font-semibold text-gray-500 mb-2">接收参数 (JSON Schema)</div>
+                <pre class="text-xs text-green-400 font-mono overflow-x-auto custom-scrollbar">{{ formatParams(tool.parameters) }}</pre>
               </div>
-            </div>
-            <div class="flex items-center gap-1.5 text-xs text-green-500 bg-green-500/10 px-2 py-1 rounded border border-green-500/20">
-              <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-              Active
+              
             </div>
           </div>
 
-          <p class="text-sm text-gray-400 leading-relaxed mb-6 flex-1">
-            {{ tool.description }}
-          </p>
-
-          <div class="mt-auto">
-            <div class="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wider flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-              Parameters Schema
-            </div>
-            <div class="bg-gray-950 rounded-lg p-3 overflow-x-auto border border-gray-800/50">
-              <pre class="text-xs font-mono text-gray-300 m-0 whitespace-pre-wrap leading-relaxed">{{ tool.params }}</pre>
-            </div>
-          </div>
         </div>
       </div>
+
     </div>
-  </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 
-// 1. 定义响应式变量
-const tools = ref<any[]>([])
 const isLoading = ref(true)
+const tools = ref<any[]>([])
 
-// 2. SVG 图标库保持不变
-const icons = {
-  search: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>`,
-  database: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" /></svg>`,
-  image: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>`,
-  wave: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>`,
-  map: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>`
+// 中文标题与图标映射表
+const getUIConfig = (name: string) => {
+  const configs: Record<string, any> = {
+    get_astronomy_object: { title: '查询天体基础信息', icon: '🔭' },
+    query_region_by_name: { title: '区域查询 (按名称)', icon: '🌌' },
+    query_region_by_coordinates: { title: '区域查询 (按坐标)', icon: '📍' },
+    get_images: { title: '获取天体深空图像', icon: '🖼️' },
+    get_spectra: { title: '获取天体一维光谱', icon: '🌈' },
+    query_adql: { title: '执行高阶 ADQL 查询', icon: '💻' },
+    calculate_average: { title: '计算数据平均值', icon: '📊' },
+    calculate_range: { title: '计算数据极差', icon: '📈' }
+  }
+  return configs[name] || { title: name, icon: '🔧' }
 }
 
-// 3. 智能匹配系统：根据后端传来的工具名称，自动分配 UI 分类和图标
-const getUIConfig = (toolName: string) => {
-  const name = toolName.toLowerCase()
-  if (name.includes('image')) return { category: '图像检索', icon: icons.image }
-  if (name.includes('spectra')) return { category: '光谱分析', icon: icons.wave }
-  if (name.includes('adql')) return { category: '高阶查询', icon: icons.database }
-  if (name.includes('region') || name.includes('coord')) return { category: '范围查询', icon: icons.map }
-  return { category: '基础查询', icon: icons.search }
-}
-
-// 4. 生命周期钩子：页面加载时向后端请求数据
+// 页面加载时向后端请求工具数据
 onMounted(async () => {
   try {
     isLoading.value = true
     const res = await fetch('http://localhost:8000/api/tools')
+    
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
     const backendTools = await res.json()
     
-    // 将后端原始数据与前端 UI 结合
     tools.value = backendTools.map((t: any) => ({
       ...t,
       ...getUIConfig(t.name)
     }))
   } catch (error) {
     console.error("加载工具列表失败:", error)
-    // 降级处理：如果你没开后端，显示一个错误卡片
+    // 降级处理
     tools.value = [{
-      name: 'Network_Error',
-      description: '无法连接到 AstroAgent 后端服务，请检查 server.py 是否正在运行。',
-      params: '{ "status": "offline" }',
-      category: '系统异常',
-      icon: icons.database
+      name: 'Backend_Offline',
+      description: '无法连接到后端服务。请检查 Python 后端是否已启动 (python start-all.py)。',
+      parameters: { properties: { status: { type: "string" } } },
+      title: '后端离线',
+      icon: '❌'
     }]
   } finally {
     isLoading.value = false
   }
 })
+
+const groupedTools = computed(() => {
+  const groups: Record<string, any[]> = {}
+
+  // 遍历后端传来的所有工具
+  tools.value.forEach(tool => {
+    // 直接读取后端发来的 category 标签，如果没有就给个默认值
+    const cat = tool.category || '📦 其他系统工具'
+    
+    // 如果这个分类还没创建，就初始化一个空数组
+    if (!groups[cat]) {
+      groups[cat] = []
+    }
+    
+    // 把工具塞进对应的分类里
+    groups[cat].push(tool)
+  })
+
+  return groups
+})
+
+// 格式化参数展示，让 JSON 好看点
+const formatParams = (params: any) => {
+  if (!params || !params.properties) return '{}'
+  return JSON.stringify(params.properties, null, 2)
+}
 </script>
 
 <style scoped>
-/* 隐藏代码块的滚动条，保持美观 */
-pre::-webkit-scrollbar {
+/* 自定义滚动条样式，让代码框更精致 */
+.custom-scrollbar::-webkit-scrollbar {
   height: 6px;
+  width: 6px;
 }
-pre::-webkit-scrollbar-track {
-  background: transparent;
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(17, 24, 39, 0.5);
+  border-radius: 4px;
 }
-pre::-webkit-scrollbar-thumb {
-  background-color: #374151;
-  border-radius: 10px;
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(55, 65, 81, 0.8);
+  border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(75, 85, 99, 1);
+}
+
+/* 用来保证卡片内大段描述文字不会超出高度 */
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;  
+  overflow: hidden;
 }
 </style>
