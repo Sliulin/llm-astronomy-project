@@ -4,7 +4,9 @@ import os
 import re
 import sys
 import uuid
-
+import time
+import csv
+from datetime import datetime
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
 
@@ -13,6 +15,26 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__fil
 sys.path.insert(0, BASE_DIR)
 
 from src.agent.tool import tool_registry
+
+METRICS_FILE = os.path.join(BASE_DIR, "metrics.csv")
+def log_metric(context_label: str, step_type: str, name: str, cost_seconds: float):
+    """将耗时指标追加到 CSV 文件中，专用于后期统计"""
+    file_exists = os.path.exists(METRICS_FILE)
+    try:
+        with open(METRICS_FILE, mode='a', newline='', encoding='utf-8') as f:
+            # 🟢 核心修复：如果文件是新建的，先写入一个 BOM 头 (\ufeff)
+            if not file_exists:
+                f.write('\ufeff') 
+                
+            writer = csv.writer(f)
+            if not file_exists:
+                writer.writerow(["Timestamp", "Context", "StepType", "Name", "CostSeconds"])
+            
+            safe_context = str(context_label).replace('\n', '').replace('\r', '')[:10]
+            writer.writerow([datetime.now().strftime("%Y-%m-%d %H:%M:%S"), safe_context, step_type, name, f"{cost_seconds:.3f}"])
+    except Exception as e:
+        print(f"⚠️ 写入性能指标失败: {e}")
+
 
 # 加载环境变量
 env_path = os.path.join(BASE_DIR, "assets", "openai.env")
@@ -52,6 +74,8 @@ session_memory = {}
 async def query(question: str, session_id: str = "default", max_turns: int = 5, on_output=None):
     global session_memory
     
+    total_start_time = time.perf_counter()  # 🟢 记录整个问题处理的总起点
+
     if session_id not in session_memory:
         session_memory[session_id] = [{"role": "system", "content": SYSTEM_PROMPT}]
     
@@ -73,9 +97,11 @@ async def query(question: str, session_id: str = "default", max_turns: int = 5, 
         turn += 1
         print(f"\n--- 第 {turn} 轮思考 (Session: {session_id[:8]}) ---")
         
+        llm_start_time = time.perf_counter() # 🟢 开始计时
+
         try:
             response = await client.chat.completions.create(
-                model="hunyuan-turbo", 
+                model="hunyuan-lite", 
                 messages=messages,
                 tools=tools if tools else None,
                 tool_choice="auto" if tools else "none",
@@ -86,6 +112,10 @@ async def query(question: str, session_id: str = "default", max_turns: int = 5, 
             if on_output:
                 await on_output({"id": str(uuid.uuid4()), "type": "error", "content": error_msg, "is_append": False, "session_id": session_id})
             return {"question": question, "final_answer": error_msg, "turns": turn}
+        
+        llm_cost_time = time.perf_counter() - llm_start_time # 🟢 结束计时
+        print(f"⏱️ [性能指标] 大模型思考耗时: {llm_cost_time:.2f}s")
+        log_metric(question, "LLM", "hunyuan-turbo", llm_cost_time)# 🟢 落盘统计
         
         message = response.choices[0].message
         messages.append(message.model_dump(exclude_none=True))
@@ -107,8 +137,13 @@ async def query(question: str, session_id: str = "default", max_turns: int = 5, 
 
                 await asyncio.sleep(0.01)
                 
+                tool_start_time = time.perf_counter() # 🟢 开始计时
                 # 执行本地天文工具
                 observation = await asyncio.to_thread(tool_registry.execute_tool, func_name, **func_args)
+                
+                tool_cost_time = time.perf_counter() - tool_start_time # 🟢 结束计时
+                print(f"⏱️ [性能指标] 工具 ({func_name}) 执行耗时: {tool_cost_time:.2f}s")
+                log_metric(func_name, "Tool", func_name, tool_cost_time) # 🟢 落盘统计
                 
                 # 提取路径生成前端可访问的下载链接，保留原字段供模型调用
                 def extract_and_hide_paths(obj):
@@ -133,7 +168,7 @@ async def query(question: str, session_id: str = "default", max_turns: int = 5, 
 
                 obs_str = json.dumps(observation, ensure_ascii=False, cls=NumpyEncoder)
                 
-                MAX_OBS_LENGTH = 1500 
+                MAX_OBS_LENGTH = 500 
                 if len(obs_str) > MAX_OBS_LENGTH:
                     obs_str = obs_str[:MAX_OBS_LENGTH] + '...[数据过长已截断，请基于当前截断信息进行回答]'
                 
@@ -172,6 +207,10 @@ async def query(question: str, session_id: str = "default", max_turns: int = 5, 
                     "session_id": session_id
                 })
                 
+            total_cost_time = time.perf_counter() - total_start_time  # 🟢 计算并记录端到端总耗时
+            log_metric(question, "Total", "End-to-End", total_cost_time)
+            print(f"🏁 [性能指标] 问题端到端总耗时: {total_cost_time:.2f}s\n")
+
             return {"question": question, "final_answer": final_answer, "turns": turn}
 
     return {"question": question, "final_answer": "抱歉，经过多次查询未能得出最终结论。", "turns": turn}
