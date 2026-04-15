@@ -1,0 +1,127 @@
+{
+  "complex_cases": [
+    {
+      "id": "C01",
+      "query": "请帮我查询 M31 的图像，从返回结果中挑选一个链接下载，绝对不要下载包含 'HI' 或 'CO' 的射电数据。下载完成后，使用图像源提取工具找出里面的星星。",
+      "logic": "get_images -> filter links -> download_fits_file -> extract_sources_from_fits"
+    },
+    {
+      "id": "C02",
+      "query": "帮我寻找 NGC 224 周边的天体，并将结果保存。然后根据保存的星表数据绘制一张赫罗图，看看它的恒星分布。",
+      "logic": "query_region_by_name -> plot_hr_diagram"
+    },
+    {
+      "id": "C03",
+      "query": "先查询火星今天的视星等和位置，如果它现在很亮（视星等小于0），请帮我下载一张它所在区域的 FITS 图像。",
+      "logic": "get_ephemeris -> conditional -> get_images -> download_fits_file"
+    },
+    {
+      "id": "C04",
+      "query": "我想对比 M31 在光学和红外波段的差异。请先做一次 Gaia 和 2MASS 的交叉匹配，半径设为 2 角分，然后告诉我匹配到了多少个源。",
+      "logic": "cross_match_catalogs"
+    },
+    {
+      "id": "C05",
+      "query": "请执行一段 ADQL：从 gaiadr3.gaia_source 中查询坐标 (10.68, 41.26) 附近 0.01 度内最亮的 10 颗星。查询完后，告诉我它们的平均 G 星等是多少。",
+      "logic": "query_adql -> python calculation"
+    },
+    {
+      "id": "C06",
+      "query": "帮我下载 3C 273 的光谱数据。下载完成后，告诉我这个类星体的红移值是多少，并根据光谱文件进行周期性分析（如果有时间序列数据）。",
+      "logic": "get_spectra -> download_fits_file -> analyze_lightcurve_period"
+    },
+    {
+      "id": "C07",
+      "query": "查询蟹状星云 (M1) 的所有可用图像链接，过滤出所有文件名中包含 'hst' (哈勃) 的链接并下载其中一个，最后对下载的文件做源提取。",
+      "logic": "get_images -> filter -> download_fits_file -> extract_sources_from_fits"
+    },
+    {
+      "id": "C08",
+      "query": "在赤经 280.5, 赤纬 -5.2 附近 0.5 度范围内搜索天体。如果发现有多于 100 个天体，请尝试缩小半径到 0.1 度重新查询，并返回前 5 个结果。",
+      "logic": "query_region_by_coordinates -> conditional re-query"
+    },
+    {
+      "id": "C09",
+      "query": "帮我找一份包含时间序列的 CSV 格式光变数据，下载它，然后使用 Lomb-Scargle 算法找出它的主周期，并生成折叠后的光变曲线图。",
+      "logic": "download_file -> analyze_lightcurve_period"
+    },
+    {
+      "id": "C10",
+      "query": "我想研究银河系中心的黑洞 Sgr A*。请查询它的基本坐标，并搜索其周围 5 角分内是否有已知的 X 射线源（利用相关星表查询）。",
+      "logic": "get_astronomy_object -> query_region_by_coordinates"
+    }
+  ],
+  "simple_cases": [
+    { "id": "S01", "query": "查询 M31 的基本信息" },
+    { "id": "S02", "query": "获取 NGC 224 的坐标和红移" },
+    { "id": "S03", "query": "查找天球坐标系中的天狼星 (Sirius)" },
+    { "id": "S04", "query": "搜索 M87* 黑洞的物理参数" },
+    { "id": "S05", "query": "查询 3C 273 类星体的信息" },
+
+    { "id": "S06", "query": "搜索 M31 周边 0.1 度内的天体" },
+    { "id": "S07", "query": "查找 NGC 7000 附近的天体集合" },
+    { "id": "S08", "query": "查询 M42 中心 0.05 度区域" },
+    { "id": "S09", "query": "搜索天狼星周边的天体" },
+    { "id": "S10", "query": "查找蟹状星云周边的目标" },
+
+    { "id": "S11", "query": "搜索坐标 (10.68, 41.26) 周边 0.01 度的天体" },
+    { "id": "S12", "query": "查询 RA 280.5, Dec -5.2 区域" },
+    { "id": "S13", "query": "搜索赤经 50.8, 赤纬 24.1 附近的源" },
+    { "id": "S14", "query": "查找坐标 (150.0, 2.0) 周边的天体" },
+    { "id": "S15", "query": "查询 RA 20h, Dec -10d 对应的坐标周边" },
+
+    { "id": "S16", "query": "获取 M31 的图像下载链接" },
+    { "id": "S17", "query": "查找 M42 的深空照片" },
+    { "id": "S18", "query": "获取草帽星系 (M104) 的图片链接" },
+    { "id": "S19", "query": "获取 NGC 224 的 FITS 图像地址" },
+    { "id": "S20", "query": "搜索 M51 的观测图像" },
+
+    { "id": "S21", "query": "获取 3C 273 的一维光谱数据" },
+    { "id": "S22", "query": "查询 M31 的光谱链接" },
+    { "id": "S23", "query": "查找织女星 (Vega) 的光谱文件" },
+    { "id": "S24", "query": "获取 NGC 1068 的光谱数据" },
+    { "id": "S25", "query": "搜索 M87 的可用光谱" },
+
+    { "id": "S26", "query": "使用 ADQL 查询 Gaia DR3 星表中前 10 条原始记录" },
+    { "id": "S27", "query": "查询 Gaia DR3 中 G 星等 (phot_g_mean_mag) 小于 10 且视差大于 10 的源" },
+    { "id": "S28", "query": "搜索赤道坐标 RA 在 [10, 11] 且 Dec 在 [41, 42] 范围内的 Gaia 数据" },
+    { "id": "S29", "query": "通过 ADQL 在 Gaia 星表中筛选视差 (parallax) 大于 100 毫角秒的近邻恒星" },
+    { "id": "S30", "query": "在 Gaia DR3 中查询距离中心点 (280.5, -5.2) 0.05 度范围内的所有源" },
+
+    { "id": "S31", "query": "查询火星当前的位置和亮度" },
+    { "id": "S32", "query": "查看木星的实时星历" },
+    { "id": "S33", "query": "获取土星的赤经赤纬" },
+    { "id": "S34", "query": "查询金星此时的视星等" },
+    { "id": "S35", "query": "获取海王星的距离和坐标" },
+
+    { "id": "S36", "query": "在坐标 (10.68, 41.27) 处交叉匹配 Gaia 和 2MASS 星表，半径 1 角分" },
+    { "id": "S37", "query": "对 M31 核心区 (RA:10.68, Dec:41.27) 的 Gaia 数据与 WISE 星表进行匹配" },
+    { "id": "S38", "query": "针对坐标 RA:280.5, Dec:-5.2 区域进行 Gaia (光学) 与 2MASS (红外) 的坐标证认" },
+    { "id": "S39", "query": "对坐标 (50.8, 24.1) 执行 2MASS 和 WISE 的 2 角分交叉查询" },
+    { "id": "S40", "query": "在 (150.0, 2.0) 处匹配半径 0.5 角分内的 Gaia 与 SDSS 星表数据" },
+
+    { "id": "S41", "query": "使用路径为 test/mock_assets/test_gaia.json 的本地星表绘制赫罗图" },
+    { "id": "S42", "query": "为本地文件 test/mock_assets/test_gaia.json 生成颜色-星等图" },
+    { "id": "S43", "query": "读取本地 JSON 数据 test/mock_assets/test_gaia.json 并绘制 HR 图" },
+    { "id": "S44", "query": "根据 test/mock_assets/test_gaia.json 文件中的恒星数据进行赫罗图绘图分析" },
+    { "id": "S45", "query": "对指定的本地数据 test/mock_assets/test_gaia.json 执行赫罗图绘制工具" },
+
+    { "id": "S46", "query": "对本地图像 test/mock_assets/test_image.fits 进行天体源提取" },
+    { "id": "S47", "query": "分析 FITS 文件 test/mock_assets/test_image.fits 中的恒星数量" },
+    { "id": "S48", "query": "对路径为 test/mock_assets/test_image.fits 的文件执行源检测分析" },
+    { "id": "S49", "query": "定位本地图像 test/mock_assets/test_image.fits 中的高亮恒星像素坐标" },
+    { "id": "S50", "query": "从 test/mock_assets/test_image.fits 图像中提取目标并生成标注预览图" },
+
+    { "id": "S51", "query": "下载 FITS 链接：https://ned.ipac.caltech.edu/dss1B2/Bb/MESSIER_031:I:IIIaJ:dss1.fits.gz" },
+    { "id": "S52", "query": "将远程地址 https://ned.ipac.caltech.edu/img/2013A+A...559A..27G/MESSIER_031:I:comb.mosaic:G2013.fits.gz 保存到本地" },
+    { "id": "S53", "query": "下载此测试图像：https://ned.ipac.caltech.edu/img/1996ApJS..103...81C/MESSIER_031:I:21cm:chs1996.fits.gz" },
+    { "id": "S54", "query": "获取并存储来自网络的光谱 FITS：https://ned.ipac.caltech.edu/img/1983MNRAS.205..787U/MESSIER_031:I:HI:u1983:sw17.fits.gz" },
+    { "id": "S55", "query": "执行远程文件下载：https://ned.ipac.caltech.edu/img/1983MNRAS.205..787U/MESSIER_031:I:HI:u1983:sw02.fits.gz" },
+
+    { "id": "S56", "query": "对本地时域数据 test/mock_assets/test_gaia.json进行周期分析" },
+    { "id": "S57", "query": "搜索光变文件 test/mock_assets/test_gaia.json 中的主周期信号" },
+    { "id": "S58", "query": "使用 Lomb-Scargle 算法处理本地文件 test/mock_assets/test_gaia.json" },
+    { "id": "S59", "query": "根据 test/mock_assets/test_gaia.json 中的时间序列生成折叠光变曲线" },
+    { "id": "S60", "query": "计算指定 csv 文件 test/mock_assets/test_ls.csv 中的天体光变周期" }
+  ]
+}

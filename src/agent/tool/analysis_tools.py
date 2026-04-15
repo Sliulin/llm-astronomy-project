@@ -16,7 +16,7 @@ from src.agent.tool.base import tool
 # 配置统一下载目录
 SAVE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../download"))
 
-@tool(description="根据本地数据文件绘制赫罗图 (HR Diagram)。必须传入包含星表数据的本地 JSON 文件绝对路径 (如 saved_path)。")
+@tool(description="根据本地数据文件绘制赫罗图 (HR Diagram/颜色-星)。必须传入包含星表数据的本地 JSON 文件绝对路径 (如 saved_path)。")
 def plot_hr_diagram(file_path: str) -> Dict[str, Any]:
     """
     绘制恒星赫罗图 / 颜色-星等图。
@@ -281,56 +281,106 @@ def download_fits_file(url: str) -> Dict[str, Any]:
 download_fits_file.title = "FITS文件下载"
 download_fits_file.icon = "📥"
 
-@tool(description="读取包含时间和亮度数据的本地 CSV/TXT 文件，使用 Lomb-Scargle 算法搜索天体光变周期。必须传入文件的绝对路径。")
+@tool(description="读取本地数据文件（CSV/TXT 或 JSON），使用 Lomb-Scargle 算法搜索天体光变周期。必须传入文件的绝对路径。支持自动解析 Gaia ADQL 返回的 JSON 格式。")
 def analyze_lightcurve_period(file_path: str) -> Dict[str, Any]:
     """
     对时序数据进行 Lomb-Scargle 周期搜索。
+    支持格式：
+    1. CSV/TXT: 前两列分别为时间和亮度。
+    2. JSON: 包含 'results' 列表，且列表项中含有时间(time/mjd)和亮度(mag/flux)字段。
     """
     if not file_path or not os.path.exists(file_path):
         return {"status": "error", "error": f"找不到指定的数据文件: {file_path}"}
 
     try:
         from astropy.timeseries import LombScargle
+        import pandas as pd
+        import json
         
-        # 1. 尝试读取数据
-        try:
-            df = pd.read_csv(file_path, comment='#')
-            if len(df.columns) < 2:
-                df = pd.read_csv(file_path, delim_whitespace=True, comment='#')
-        except Exception:
-            return {"status": "error", "error": "无法解析文件，请确保前两列分别是时间(Time)和亮度(Flux/Mag)数据。"}
+        # ==========================================
+        # 1. 智能读取数据 (JSON vs CSV)
+        # ==========================================
+        if file_path.lower().endswith('.json'):
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    content = json.load(f)
+                
+                # 提取数据列表（兼容 query_adql 的 results 结构）
+                rows = content.get("results", content.get("data", []))
+                if not rows:
+                    return {"status": "error", "error": "JSON 文件中未找到 'results' 或 'data' 字段，无法解析。"}
+                
+                df = pd.DataFrame(rows)
+                
+                # 智能识别列名
+                time_cols = [c for c in df.columns if c.lower() in ['time', 'mjd', 'obstime', 'jd', 'epoch']]
+                mag_cols = [c for c in df.columns if c.lower() in ['mag', 'flux', 'phot_g_mean_mag', 'brightness']]
+                
+                if time_cols and mag_cols:
+                    t = df[time_cols[0]].values
+                    y = df[mag_cols[0]].values
+                else:
+                    # 如果没有标准列名，取前两列
+                    t = df.iloc[:, 0].values
+                    y = df.iloc[:, 1].values
+            except Exception as e:
+                return {"status": "error", "error": f"解析 JSON 文件失败: {str(e)}"}
+        else:
+            # 原有的 CSV/TXT 读取逻辑
+            try:
+                df = pd.read_csv(file_path, comment='#')
+                if len(df.columns) < 2:
+                    df = pd.read_csv(file_path, delim_whitespace=True, comment='#')
+                t = df.iloc[:, 0].values
+                y = df.iloc[:, 1].values
+            except Exception:
+                return {"status": "error", "error": "无法解析 CSV/TXT 文件，请确保前两列分别是时间(Time)和亮度(Flux/Mag)数据。"}
 
-        t = df.iloc[:, 0].values
-        y = df.iloc[:, 1].values
+        # 确保数据不为空且为数值型
+        t = pd.to_numeric(t, errors='coerce')
+        y = pd.to_numeric(y, errors='coerce')
+        mask = ~np.isnan(t) & ~np.isnan(y)
+        t, y = t[mask], y[mask]
 
+        if len(t) < 5:
+            return {"status": "error", "error": "有效数据点不足（少于5个），无法进行周期分析。"}
+
+        # ==========================================
         # 2. 计算 Lomb-Scargle 周期图
+        # ==========================================
         print(f"正在分析 {len(t)} 个数据点的光变周期...")
+        # 搜索范围：0.1天到50天
         frequency, power = LombScargle(t, y).autopower(minimum_frequency=1/50.0, maximum_frequency=1/0.1)
         
         # 提取最佳主周期
         best_freq = frequency[np.argmax(power)]
         best_period = 1.0 / best_freq
         
+        # ==========================================
         # 3. 绘制折叠光变曲线图
+        # ==========================================
         phase = (t % best_period) / best_period
         
         plt.figure(figsize=(10, 6))
+        # 绘制两个相位周期，方便观察连续性
         plt.scatter(phase, y, s=15, color='#1f77b4', alpha=0.7, edgecolors='none', label='Phase 0-1')
         plt.scatter(phase + 1, y, s=15, color='#ff7f0e', alpha=0.7, edgecolors='none', label='Phase 1-2')
         
         plt.title(f"Phase-Folded Light Curve\nBest Period = {best_period:.4f} Days", fontsize=14, fontweight='bold')
         plt.xlabel("Phase (Cycles)", fontsize=12)
-        plt.ylabel("Observation Value (Flux/Mag)", fontsize=12)
+        plt.ylabel("Observation Value", fontsize=12)
         
         # 智能判断：如果均值小于 30，大概率是星等，翻转 Y 轴
-        if np.mean(y) < 30:
+        if np.nanmean(y) < 30:
             plt.gca().invert_yaxis()
             plt.ylabel("Apparent Magnitude (mag)", fontsize=12)
             
         plt.grid(True, alpha=0.3, linestyle='--')
         plt.legend()
         
-        # 4. 保存图片并返回给大模型
+        # ==========================================
+        # 4. 图像保存与结果返回
+        # ==========================================
         tool_dir = os.path.join(SAVE_DIR, "周期分析")
         os.makedirs(tool_dir, exist_ok=True)
         filename = f"LS_Periodogram_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
@@ -341,14 +391,14 @@ def analyze_lightcurve_period(file_path: str) -> Dict[str, Any]:
 
         return {
             "status": "success",
-            "message": f"周期搜索计算完成！在数据中发现了显著的周期性变化，最佳拟合周期为 {best_period:.4f} 天。",
-            "best_period_days": round(best_period, 4),
+            "message": f"周期搜索完成。最佳拟合周期为 {best_period:.4f} 天。",
+            "best_period_days": round(float(best_period), 4),
             "data_points": len(t),
             "saved_image_path": saved_image_path
         }
 
     except ImportError:
-        return {"status": "error", "error": "缺少 astropy 库，请执行: pip install astropy"}
+        return {"status": "error", "error": "缺少依赖库，请执行: pip install astropy pandas matplotlib numpy"}
     except Exception as e:
         return {"status": "error", "error": f"周期分析失败: {str(e)}"}
 
