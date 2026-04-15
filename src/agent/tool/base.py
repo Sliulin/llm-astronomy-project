@@ -1,5 +1,5 @@
 import inspect
-from typing import Dict, Any, List, Callable, get_type_hints
+from typing import Any, Callable, Dict, List, get_type_hints
 
 def tool(description: str):
     """
@@ -23,13 +23,13 @@ class ToolRegistry:
                 self._auto_register_method(name, getattr(method, '_tool_description', ""), method)
 
     def register_module(self, module: Any, category: str = "其他工具"):
-        """【修改】：扫描整个文件时，给所有工具打上 category 标签"""
+        """扫描整个文件时，给所有工具打上 category 标签"""
         for name, func in inspect.getmembers(module, predicate=inspect.isfunction):
             if getattr(func, '_is_tool', False):
                 self._auto_register_method(name, getattr(func, '_tool_description', ""), func, category)
 
     def _auto_register_method(self, name: str, description: str, method: Callable, category: str = "其他工具"):
-        """【修改】：接收并保存 category"""
+        """接收并保存 category"""
         sig = inspect.signature(method)
         type_hints = get_type_hints(method)
         
@@ -70,7 +70,7 @@ class ToolRegistry:
             "description": description,
             "parameters": {"type": "object", "properties": properties, "required": required},
             "func": method,
-            "category": category  # <--- 【核心】：保存分类信息
+            "category": category  # 保存分类信息
         }
         print(f"🔧 自动注册工具成功: [{category}] {name}")
 
@@ -81,7 +81,7 @@ class ToolRegistry:
                 "name": info["name"],
                 "description": info["description"],
                 "parameters": info["parameters"],
-                "category": info["category"],  # 直接用字典里已经存好的完美分类
+                "category": info["category"],  # 直接用字典里已经存好的分类
                 "title": getattr(info["func"], 'title', info["name"]),
                 "icon": getattr(info["func"], 'icon', '🔧')
             }

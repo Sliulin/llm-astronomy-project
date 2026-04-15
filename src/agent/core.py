@@ -1,17 +1,18 @@
-import os
-import sys
-import json
-import uuid
 import asyncio
+import json
+import os
+import re
+import sys
+import uuid
+
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
-from src.agent.tool import tool_registry
 
-# 添加项目根目录到Python路径
+# 添加项目根目录到 Python 路径
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, BASE_DIR)
 
-
+from src.agent.tool import tool_registry
 
 # 加载环境变量
 env_path = os.path.join(BASE_DIR, "assets", "openai.env")
@@ -45,7 +46,7 @@ SYSTEM_PROMPT = """你是一个专业的天文数据智能助手。
 【当前环境】：
 所有的图像存储在本地 download/ 目录下，或指向远程 NED 数据库。如果是本地路径，请确保链接正确。"""
 
-# 初始化全局记忆
+# 全局会话记忆
 session_memory = {}
 
 async def query(question: str, session_id: str = "default", max_turns: int = 5, on_output=None):
@@ -56,6 +57,7 @@ async def query(question: str, session_id: str = "default", max_turns: int = 5, 
     
     messages = session_memory[session_id]
     
+    # 截断历史记录以控制上下文长度
     if len(messages) > 10:
         session_memory[session_id] = [messages[0]] + messages[-6:]
         messages = session_memory[session_id]
@@ -63,9 +65,7 @@ async def query(question: str, session_id: str = "default", max_turns: int = 5, 
     messages.append({"role": "user", "content": question})
     tools = tool_registry.get_openai_tools()
     
-    # ==========================================
-    # 【新增】：创建一个列表，悄悄攒着从工具里拦截下来的本地文件链接
-    # ==========================================
+    # 收集被拦截的本地文件下载链接
     bypassed_links = []
     
     turn = 0
@@ -109,22 +109,17 @@ async def query(question: str, session_id: str = "default", max_turns: int = 5, 
                 
                 # 执行本地天文工具
                 observation = await asyncio.to_thread(tool_registry.execute_tool, func_name, **func_args)
-                # ==========================================
-                # 【核心拦截逻辑】：提取路径生成下载链接，但保留原字段供大模型调用
-                # ==========================================
+                
+                # 提取路径生成前端可访问的下载链接，保留原字段供模型调用
                 def extract_and_hide_paths(obj):
                     if isinstance(obj, dict):
-                        # 我们移除了 keys_to_delete 机制，不再删除原始路径
                         for k, v in obj.items():
                             if isinstance(v, str) and ('\\download\\' in v or '/download/' in v):
                                 normalized = v.replace('\\', '/')
                                 rel_path = normalized.split('/download/')[-1]
                                 url = f"http://localhost:8000/downloads/{rel_path}"
-                                # 把生成的前端 URL 存到全局的 bypassed_links 列表里，最后附在回答末尾
+                                # 保存前端下载链接至全局列表，稍后附加到最终回答末尾
                                 bypassed_links.append(f"\n\n**[原始数据已下载到downloads目录<br><span style='margin-left: 1.2em;'>点击查看原始数据 ({k})</span>]({url})**")
-                                
-                                # 这里不再执行 keys_to_delete.append(k) 
-                                # 从而将 saved_path 完整保留给大模型
                                 
                             elif isinstance(v, (dict, list)):
                                 extract_and_hide_paths(v)
@@ -135,7 +130,6 @@ async def query(question: str, session_id: str = "default", max_turns: int = 5, 
 
                 # 执行拦截
                 extract_and_hide_paths(observation)
-                # ==========================================
 
                 obs_str = json.dumps(observation, ensure_ascii=False, cls=NumpyEncoder)
                 
@@ -156,16 +150,13 @@ async def query(question: str, session_id: str = "default", max_turns: int = 5, 
             continue 
             
         else:
-            # ==========================================
-            # 【最后一步】：物理拼接
-            # ==========================================
+            # 拼接最终回答内容
             final_answer = message.content or "未返回内容"
             
-            import re
             final_answer = re.sub(r'\[[^\]]*\]\((sandbox:|file:|\./|\.\\)[^\)]*\)', '', final_answer)
             final_answer = final_answer.strip() # 清理残留的空行
             
-            # 无论大模型说了啥，我们强制把刚才拦截到的链接贴在它回答的最下面！
+            # 将拦截到的文件链接附加到回答末尾
             if bypassed_links:
                 unique_links = list(set(bypassed_links)) # 去重
                 final_answer += "".join(unique_links)

@@ -1,37 +1,35 @@
-import os
 import json
+import os
+import re
 from datetime import datetime
-from tracemalloc import get_object_traceback
-from typing import Dict, Any, List
-from astroquery.ipac.ned import Ned
-from astroquery.vizier import Vizier
+from typing import Any, Dict, List
 
-import numpy as np
-from astropy.time import Time
-from astropy.coordinates import SkyCoord 
 import astropy.units as u
-
+import numpy as np
+from astropy.coordinates import SkyCoord
+from astropy.time import Time
+from astroquery.ipac.ned import Ned
 from astroquery.jplhorizons import Horizons
+from astroquery.vizier import Vizier
 from astroquery.xmatch import XMatch
 
-# 引入基座的魔法装饰器
 from src.agent.tool.base import tool
 
 # ==========================================
-# 1. 全局配置与客户端初始化
+# 全局配置与客户端初始化
 # ==========================================
 ned = Ned()
 vizier = Vizier()
 vizier.ROW_LIMIT = 10 
 
-# 自动定位到项目根目录下的 download 文件夹
+# 配置统一下载目录
 SAVE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../download"))
 
 # ==========================================
-# 2. 内部辅助函数 (大模型不可见)
+# 内部辅助函数
 # ==========================================
 def _save_result(tool_name: str, result: Dict[str, Any]) -> str:
-    """保存工具结果到文件"""
+    """保存工具结果到本地 JSON 文件"""
     try:
         tool_dir = os.path.join(SAVE_DIR, tool_name)
         os.makedirs(tool_dir, exist_ok=True)
@@ -107,9 +105,8 @@ def _query_region_by_name_vizier(object_name: str, radius: float = 0.01) -> Dict
     position = obj_info.get("position")
     return _query_region_by_coordinates_vizier(position["RA"], position["Dec"], radius)
 
-
 # ==========================================
-# 3. 对外暴露的业务工具 (全部装配 @tool)
+# 天文数据查询工具
 # ==========================================
 
 @tool(description="查询天文对象的核心基础信息，包括坐标(RA/Dec)、类型和红移等")
@@ -138,9 +135,9 @@ def get_astronomy_object(object_name: str) -> Dict[str, Any]:
         return info
     except Exception as e:
         return _get_astronomy_object_vizier(object_name)
+
 get_astronomy_object.title = "天文对象查询"
 get_astronomy_object.icon = " 🔍"
-
 
 @tool(description="锥形搜索：按名称查询以目标为中心，指定半径内的周边天文对象集合")
 def query_region_by_name(object_name: str, radius: float = 0.01) -> Dict[str, Any]:
@@ -163,10 +160,9 @@ def query_region_by_name(object_name: str, radius: float = 0.01) -> Dict[str, An
         result = _query_region_by_name_vizier(object_name, radius)
         result["saved_path"] = _save_result("按名称查询区域", result)
         return result
+
 query_region_by_name.title = "按名称查询区域"
 query_region_by_name.icon = "🔍"
-
-
 
 @tool(description="按绝对赤道坐标(RA, Dec)查询区域内的天文对象集合")
 def query_region_by_coordinates(ra: float, dec: float, radius: float = 0.01) -> Dict[str, Any]:
@@ -191,10 +187,9 @@ def query_region_by_coordinates(ra: float, dec: float, radius: float = 0.01) -> 
         result = _query_region_by_coordinates_vizier(ra, dec, radius)
         result["saved_path"] = _save_result("按坐标查询区域", result)
         return result
+
 query_region_by_coordinates.title = "按坐标查询区域"
 query_region_by_coordinates.icon = "🔍"
-
-
 
 @tool(description="获取指定天文对象的深空图像下载链接 (FITS/GZ格式)")
 def get_images(object_name: str, max_images: int = 5) -> Dict[str, Any]:
@@ -216,9 +211,9 @@ def get_images(object_name: str, max_images: int = 5) -> Dict[str, Any]:
         return result
     except Exception as e:
         return {"error": str(e), "StatusCode": -1}
+
 get_images.title = "获取天体图像"
 get_images.icon = "🖼️"
-
 
 @tool(description="获取指定天文对象的一维光谱数据链接")
 def get_spectra(object_name: str, max_spectra: int = 5) -> Dict[str, Any]:
@@ -240,31 +235,48 @@ def get_spectra(object_name: str, max_spectra: int = 5) -> Dict[str, Any]:
         return result
     except Exception as e:
         return {"error": str(e), "StatusCode": -1}
+
 get_spectra.title = "获取天体光谱"
 get_spectra.icon = "🌈"
 
-@tool(description="直接执行标准 ADQL 语句，对 Gaia 星表进行高阶自定义查询")
+@tool(description="直接执行标准 ADQL 语句，对 Gaia 星表进行高阶自定义查询。注意：最多返回2000条数据以保证性能。")
 def query_adql(query: str) -> Dict[str, Any]:
     """
     执行ADQL查询
     Args:
         query (str): 符合规范的 ADQL 查询语句
     """
-    print(f"执行ADQL查询: {query}")
+    print(f"原始ADQL查询: {query}")
+    
+    # ==========================================
+    # 安全拦截：强制注入或修改 TOP 限制
+    # ==========================================
+    try:
+        query_upper = query.upper()
+        if "TOP" not in query_upper:
+            query = re.sub(r'(?i)^\s*SELECT\s+', 'SELECT TOP 2000 ', query)
+        else:
+            match = re.search(r'(?i)TOP\s+(\d+)', query)
+            if match and int(match.group(1)) > 2000:
+                query = re.sub(r'(?i)(TOP\s+)\d+', r'\g<1>2000', query)
+                
+        print(f"安全拦截后执行的ADQL: {query}")
+    except Exception as e:
+        print(f"ADQL正则拦截失败，将尝试执行原语句: {e}")
+
     try:
         from astroquery.gaia import Gaia
         job = Gaia.launch_job_async(query)
         result_table = job.get_results()
         
         # ==========================================
-        # 1. 提取并清理【完整】数据，用于本地落盘
+        # 提取并清理完整数据
         # ==========================================
         all_raw_results = []
         for row in result_table:
             row_dict = {}
             for col in result_table.colnames:
                 val = row[col]
-                # 处理 Astropy 返回的特殊数据类型，防止 JSON 序列化报错
                 if np.ma.is_masked(val):
                     row_dict[col] = None
                 elif isinstance(val, (np.floating, float)):
@@ -277,7 +289,6 @@ def query_adql(query: str) -> Dict[str, Any]:
                     row_dict[col] = str(val)
             all_raw_results.append(row_dict)
         
-        # 保存完整数据到本地（包含所有的行、所有的列）
         save_result = {
             "message": f"ADQL查询成功，找到 {len(result_table)} 条记录",
             "count": len(result_table),
@@ -287,36 +298,34 @@ def query_adql(query: str) -> Dict[str, Any]:
         saved_path = _save_result("执行ADQL查询", save_result)
         
         # ==========================================
-        # 2. 提取【精简】数据，用于发给大模型
+        # 提取精简数据供大模型使用
         # ==========================================
         important_fields = [
             'source_id', 'designation', 'ra', 'dec', 'parallax', 
             'phot_g_mean_mag', 'bp_rp', 'phot_bp_mean_mag', 'phot_rp_mean_mag'
         ]
         
-        # 只保留 important_fields 中实际存在的列
         filtered_columns = [col for col in result_table.colnames if col in important_fields]
         
-        # 只取前 5 行！
         preview_results = []
         for row in all_raw_results[:5]:
             preview_row = {col: row[col] for col in filtered_columns}
             preview_results.append(preview_row)
         
-        # 返回给大模型的最终结果
         result = {
             "message": f"ADQL查询成功，总共找到 {len(result_table)} 条记录。为节省上下文，此处仅展示前 {len(preview_results)} 条及部分核心列。",
             "count": len(result_table),
             "columns": filtered_columns,
             "results": preview_results,
-            "saved_path": saved_path  # 这个路径会被 core.py 的隐身拦截器捕获转为前端下载链接
+            "saved_path": saved_path
         }
         return result
         
     except Exception as e:
         error_result = {"error": str(e), "status": "error"}
-        error_result["saved_path"] = _save_result("执行ADQL查询", error_result)
+        error_result["saved_path"] = _save_result("执行ADQL查询_失败", error_result)
         return error_result
+
 query_adql.title = "执行ADQL查询"
 query_adql.icon = "🔍"
 
@@ -331,7 +340,7 @@ def get_ephemeris(target_name: str) -> Dict[str, Any]:
         target_name (str): 太阳系天体名称，如 'Mars', '火星', 'Halley'。
     """
     
-    # 【修复】：JPL Horizons 极其严格，我们做一个智能字典，把常见的名字自动转成 JPL 官方 ID
+    # JPL Horizons 名称映射
     mapping = {
         "mars": "499", "火星": "499",
         "jupiter": "599", "木星": "599",
@@ -345,7 +354,6 @@ def get_ephemeris(target_name: str) -> Dict[str, Any]:
         "sun": "10", "太阳": "10"
     }
     
-    # 转换 ID，如果没有匹配到（比如查哈雷彗星），就用大模型传进来的原值去碰碰运气
     search_id = mapping.get(target_name.lower().strip(), target_name)
     
     try:
@@ -369,6 +377,7 @@ def get_ephemeris(target_name: str) -> Dict[str, Any]:
         
     except Exception as e:
         return {"status": "error", "error": f"星历查询失败，可能天体名称存在歧义或无法识别。错误详情: {str(e)}"}
+
 get_ephemeris.title = "太阳系星历查询"
 get_ephemeris.icon = "🪐"
 
@@ -404,7 +413,6 @@ def cross_match_catalogs(ra: float, dec: float, radius_arcmin: float, base_catal
         
     try:
         coord = SkyCoord(ra=ra, dec=dec, unit=(u.deg, u.deg), frame='icrs')
-        # 【修改1】：解开 Vizier 的行数封印（设为 5000 足以应对 5 角分内的大部分星区，又不会内存溢出）
         v = Vizier(columns=["**"], row_limit=5000) 
         tables = v.query_region(coord, radius=radius_arcmin * u.arcmin, catalog=cat1_vizier)
         
@@ -433,7 +441,6 @@ def cross_match_catalogs(ra: float, dec: float, radius_arcmin: float, base_catal
                 "message": f"找到了 {len(base_table)} 个 {base_catalog} 目标，但在 3 角秒误差内没有找到 {target_catalog} 的匹配数据。"
             }
             
-        # 【修改2】：遍历所有匹配结果，而不是仅仅前 10 条
         full_results = []
         for row in xmatched_table:
             row_dict = {}
@@ -451,7 +458,6 @@ def cross_match_catalogs(ra: float, dec: float, radius_arcmin: float, base_catal
                     row_dict[col] = str(val)
             full_results.append(row_dict)
             
-        # 【修改3】：组装供本地保存的完整数据包
         save_data = {
             "status": "success", 
             "message": f"成功完成交叉证认！在 {radius_arcmin} 角分内，找到 {len(full_results)} 个匹配天体。",
@@ -459,10 +465,8 @@ def cross_match_catalogs(ra: float, dec: float, radius_arcmin: float, base_catal
             "data": full_results
         }
         
-        # 将完整数据落盘，与原有工具逻辑保持一致
         saved_path = _save_result("交叉匹配", save_data)
         
-        #组装仅返回给大模型的精简数据包（只给前 5 条）
         preview_results = []
         for row in full_results[:5]:
             preview_row = {k: row[k] for k in list(row.keys())[:5]}
@@ -482,9 +486,9 @@ def cross_match_catalogs(ra: float, dec: float, radius_arcmin: float, base_catal
         error_result = {"status": "error", "error": f"交叉证认失败: {str(e)}"}
         error_result["saved_path"] = _save_result("交叉匹配", error_result)
         return error_result
+
 cross_match_catalogs.title = "跨星表交叉证认工具"
 cross_match_catalogs.icon = "🔍"
 
 if __name__ == "__main__":
     get_astronomy_object("M31")
-   

@@ -1,20 +1,22 @@
-from fastapi import FastAPI, Request, File, UploadFile
-import shutil
-from fastapi.responses import StreamingResponse
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from contextlib import asynccontextmanager
 import asyncio
 import json
-import time
 import os
+import shutil
+import time
 import uuid
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, Request, File, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 
 from src.agent.core import query
 from src.agent.tool import tool_registry
 
 # ==========================================
-# 多会话持久化管理
+# 会话持久化管理
 # ==========================================
 message_queue = asyncio.Queue()
 SESSIONS_FILE = "sessions.json"
@@ -31,7 +33,7 @@ def load_sessions():
             print(f"❌ 加载会话失败: {e}")
             sessions_data = {}
     
-    # 如果没有会话，默认创建一个
+    # 无现有会话时初始化默认会话
     if not sessions_data:
         create_new_session_data()
 
@@ -72,7 +74,7 @@ os.makedirs("download", exist_ok=True)
 app.mount("/downloads", StaticFiles(directory="download"), name="downloads")
 
 # ==========================================
-# RESTful API：会话管理
+# RESTful API：会话与工具管理
 # ==========================================
 @app.get("/api/sessions")
 async def get_sessions():
@@ -99,13 +101,33 @@ async def delete_session(session_id: str):
     if session_id in sessions_data:
         del sessions_data[session_id]
         save_sessions()
+        # 确保系统至少保留一个会话
         if not sessions_data:
-            create_new_session_data() # 删空了就自动补一个
+            create_new_session_data() 
     return {"success": True}
+
+class SessionUpdate(BaseModel):
+    title: str
+
+@app.put("/api/sessions/{session_id}")
+async def update_session_title(session_id: str, payload: SessionUpdate):
+    """更新指定会话的标题"""
+    try:
+        if session_id in sessions_data:
+            # 更新内存数据并落盘
+            sessions_data[session_id]["title"] = payload.title
+            save_sessions()
+            return {"success": True, "message": "标题更新成功"}
+        else:
+            return {"success": False, "error": "会话不存在"}
+            
+    except Exception as e:
+        print(f"更新会话标题失败: {e}")
+        return {"success": False, "error": str(e)}
 
 @app.get("/api/tools")
 async def get_tools_list():
-    """动态获取后端注册的所有工具 (包含分类信息，供前端工具箱展示)"""
+    """动态获取后端注册的工具集，供前端分类展示"""
     return tool_registry.get_frontend_tools()
     
 UPLOAD_DIR = os.path.abspath("upload")
@@ -113,14 +135,13 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 @app.post("/api/upload")
 async def upload_file(file: UploadFile = File(...)):
-    """接收前端上传的文件并保存到本地"""
+    """接收前端上传文件并保存到本地"""
     try:
-        # 为了防止重名覆盖，给文件名加个时间戳前缀
+        # 添加时间戳前缀以防止同名文件覆盖
         timestamp = time.strftime("%Y%m%d_%H%M%S")
         safe_filename = f"{timestamp}_{file.filename}"
         file_path = os.path.join(UPLOAD_DIR, safe_filename)
         
-        # 将上传的文件流写入本地磁盘
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
             
@@ -130,17 +151,18 @@ async def upload_file(file: UploadFile = File(...)):
             "success": True,
             "message": "文件上传成功",
             "filename": file.filename,
-            "file_path": file_path # 把在服务器上的绝对路径返回给前端
+            "file_path": file_path 
         }
     except Exception as e:
         print(f"❌ 上传文件失败: {e}")
         return {"success": False, "error": str(e)}
+
 # ==========================================
 # 对话核心 API
 # ==========================================
 @app.get("/sse")
 async def sse_endpoint():
-    """实时流数据推送 (不再推送历史记录，历史记录由前端调 REST 接口获取)"""
+    """实时流数据推送"""
     async def event_generator():
         yield f"data: {json.dumps({'type': 'connection', 'connectionId': 'local-agent'})}\n\n"
         while True:
@@ -155,6 +177,7 @@ async def sse_endpoint():
 
 @app.post("/chat")
 async def chat_endpoint(request: Request):
+    """处理用户对话请求"""
     try:
         data = await request.json()
         message = data.get("message", "")
@@ -163,6 +186,7 @@ async def chat_endpoint(request: Request):
         if not message or session_id not in sessions_data:
             return {"error": "Invalid request"}
         
+        # 记录用户消息
         user_msg = {
             "id": str(uuid.uuid4()),
             "type": "answer",
@@ -172,24 +196,25 @@ async def chat_endpoint(request: Request):
         }
         sessions_data[session_id]["messages"].append(user_msg)
         
-        # 智能重命名会话标题
+        # 首条消息自动重命名会话标题
         if sessions_data[session_id]["title"] == "新观测任务":
             sessions_data[session_id]["title"] = message[:12] + ("..." if len(message) > 12 else "")
         
         sessions_data[session_id]["updated_at"] = time.time()
         
-        # 推送占位消息
+        # 推送 AI 思考状态占位符
         thinking_msg = {
             "id": str(uuid.uuid4()),
             "type": "thinking",
             "content": "AI正在思考并调用工具...",
             "role": "assistant",
             "timestamp": time.time(),
-            "session_id": session_id # 带上 session_id，防止前端串台
+            "session_id": session_id 
         }
         sessions_data[session_id]["messages"].append(thinking_msg)
         await message_queue.put(thinking_msg)
         
+        # 消息流回调处理
         async def on_output(output):
             msg = {
                 "id": output.get("id", str(uuid.uuid4())),
@@ -202,7 +227,7 @@ async def chat_endpoint(request: Request):
             }
             await message_queue.put(msg)
             
-            # 更新本地内存
+            # 更新本地状态
             if not msg["is_append"]:
                 sessions_data[session_id]["messages"].append(msg)
             else:
@@ -214,6 +239,7 @@ async def chat_endpoint(request: Request):
             sessions_data[session_id]["updated_at"] = time.time()
             save_sessions()
 
+        # 调度核心查询逻辑
         await query(message, session_id=session_id, on_output=on_output)
         return {"success": True}
         

@@ -17,7 +17,7 @@ const props = defineProps<{
 }>()
 
 // ==========================================
-// 【新增逻辑】：定义 emit 事件并拦截点击
+// 事件定义与点击拦截
 // ==========================================
 const emit = defineEmits<{
   (e: 'preview-json', url: string): void
@@ -27,13 +27,12 @@ const handleLinkClick = (e: MouseEvent) => {
   const target = e.target as HTMLElement
   const aTag = target.closest('a')
   
-  // 如果点击的是本地的 json 下载链接，拦截它！
+  // 拦截本地 json 下载链接
   if (aTag && aTag.href.includes('/downloads/') && aTag.href.endsWith('.json')) {
     e.preventDefault() // 阻止浏览器打开新标签页
     emit('preview-json', aTag.href) // 通知父组件打开弹窗
   }
 }
-// ==========================================
 
 // 初始化 Markdown 解析器
 const md = new MarkdownIt({
@@ -61,7 +60,7 @@ md.renderer.rules.link_open = function (tokens, idx, options, env, self) {
   }
 }
 
-// 渲染前预处理：防止大模型吐出原始 Python 字典导致的渲染失败
+// 渲染前预处理：防止大模型输出原始 Python 字典导致渲染失败
 const preprocessContent = (text: string) => {
   if (!text) return ''
   
@@ -79,7 +78,7 @@ const renderedContent = computed(() => {
 </script>
 
 <style>
-/* 核心：解决链接不可见问题 */
+/* 解决链接不可见问题 */
 .markdown-renderer a {
   color: #60a5fa !important;
   text-decoration: underline !important;
@@ -104,10 +103,10 @@ const renderedContent = computed(() => {
 
 /* 表格样式美化 */
 .markdown-renderer table {
-  display: block;       /* 让表格变成块级元素，从而支持独立滚动 */
-  max-width: 100%;      /* 最大宽度绝对不超过外层聊天气泡 */
-  width: max-content;   /* 核心魔法：宽度完全由内部数据撑开，自适应！ */
-  overflow-x: auto;     /* 只有当撑开的宽度大于 100% 时，才出现横向滚动条 */
+  display: block;       /* 让表格变成块级元素，支持独立滚动 */
+  max-width: 100%;      /* 最大宽度不超过外层聊天气泡 */
+  width: max-content;   /* 宽度由内部数据撑开，实现自适应 */
+  overflow-x: auto;     /* 只有当撑开的宽度大于 100% 时才出现横向滚动条 */
   
   table-layout: auto;
   border-collapse: separate;
@@ -120,11 +119,11 @@ const renderedContent = computed(() => {
 /* 单元格自适应撑开 */
 .markdown-renderer th,
 .markdown-renderer td {
-  padding: 0.75rem 1.25rem; /* 稍微增加一点左右内边距，让自适应后的数据不拥挤 */
+  padding: 0.75rem 1.25rem; /* 增加左右内边距，防止自适应后数据拥挤 */
   border-bottom: 1px solid #374151;
   text-align: center;
   vertical-align: middle;
-  white-space: nowrap; /* 核心魔法：强制所有列都不换行，原汁原味展示天文长数字 */
+  white-space: nowrap; /* 强制所有列不换行，完整展示天文长数字 */
 }
 
 /* 修复底部最后一行的双重边框问题 */

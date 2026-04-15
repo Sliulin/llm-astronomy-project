@@ -6,7 +6,7 @@
     <div class="text-center z-10 max-w-3xl">
       <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm mb-6 shadow-[0_0_20px_rgba(59,130,246,0.15)]">
         <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-        v0.1.0 · LLM Astronomy Engine
+        v1.0.0 · LLM Astronomy Engine
       </div>
       
       <h1 class="text-5xl md:text-7xl font-extrabold tracking-tight mb-6">
@@ -29,3 +29,7 @@
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+// 首页逻辑组件
+</script>

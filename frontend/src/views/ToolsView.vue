@@ -2,7 +2,9 @@
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <div class="mb-10">
       <h1 class="text-3xl font-bold text-white flex items-center gap-3">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" /></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" />
+        </svg>
         系统工具箱
       </h1>
       <p class="mt-2 text-gray-400">以下是 AstroAgent 当前支持的所有可用工具，大模型会根据您的需求自动调用它们。</p>
@@ -48,10 +50,8 @@
             
           </div>
         </div>
-
       </div>
     </div>
-
   </div>
 </template>
 
@@ -61,7 +61,7 @@ import { ref, onMounted, computed } from 'vue'
 const isLoading = ref(true)
 const tools = ref<any[]>([])
 
-// 页面加载时向后端请求工具数据
+// 挂载时从后端 API 获取动态注册的工具集
 onMounted(async () => {
   try {
     isLoading.value = true
@@ -75,7 +75,7 @@ onMounted(async () => {
     }))
   } catch (error) {
     console.error("加载工具列表失败:", error)
-    // 降级处理
+    // 后端离线时的降级展示
     tools.value = [{
       name: 'Backend_Offline',
       description: '无法连接到后端服务。请检查 Python 后端是否已启动 (python start-all.py)。',
@@ -89,25 +89,22 @@ onMounted(async () => {
   }
 })
 
+//根据后端返回的 category 标签对工具进行分组
 const groupedTools = computed(() => {
   const groups: Record<string, any[]> = {}
 
-  // 遍历后端传来的所有工具
   tools.value.forEach(tool => {
-    // 直接读取后端发来的 category 标签，如果没有就给个默认值
     const cat = tool.category || '📦 其他系统工具'
-    
     if (!groups[cat]) {
       groups[cat] = []
     }
-    
     groups[cat].push(tool)
   })
 
   return groups
 })
 
-// 格式化参数展示，让 JSON 好看点
+//格式化 JSON 参数以便于阅读
 const formatParams = (params: any) => {
   if (!params || !params.properties) return '{}'
   return JSON.stringify(params.properties, null, 2)
@@ -115,7 +112,7 @@ const formatParams = (params: any) => {
 </script>
 
 <style scoped>
-/* 自定义滚动条样式，让代码框更精致 */
+/* 自定义滚动条美化 */
 .custom-scrollbar::-webkit-scrollbar {
   height: 6px;
   width: 6px;
@@ -132,7 +129,7 @@ const formatParams = (params: any) => {
   background: rgba(75, 85, 99, 1);
 }
 
-/* 用来保证卡片内大段描述文字不会超出高度 */
+/* 限制描述文字行数 */
 .line-clamp-3 {
   display: -webkit-box;
   -webkit-line-clamp: 3;
